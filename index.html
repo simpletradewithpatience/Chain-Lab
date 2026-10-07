@@ -56,6 +56,13 @@ h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-right:auto;min-width:0}
 .chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:12.5px;background:var(--sunk);max-width:100%}
 .chip b{font-weight:600}
+td.stale b{text-decoration:line-through;color:var(--muted);font-weight:500}
+.settle{margin:10px 0 0;font-size:13px;background:var(--orange-soft);border-radius:6px;padding:8px 12px;max-width:110ch}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.addstock{display:inline-flex;align-items:center;gap:4px;padding-left:4px}
+.addstock input{width:120px;border:1px solid var(--line);background:var(--sunk);border-radius:4px;padding:5px 8px;font:500 13px var(--f-ui);text-transform:uppercase}
+.addstock button{border:0;background:none;padding:6px 8px;border-radius:4px;cursor:pointer;font-weight:600;color:var(--green)}
+.seg{flex-wrap:wrap}
 .age{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:3px 10px;font-size:12.5px;font-weight:500;border:1px solid transparent}
 .age::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
 .age.up{background:var(--green-soft);color:var(--green)} .age.wa{background:var(--orange-soft);color:var(--ink)} .age.dn{background:var(--red-soft);color:var(--red)}
@@ -430,7 +437,13 @@ const ENG = (() => {
   /* ---------- chain model ---------- */
   function model(merged, T) {
     const rows = merged.rows;
-    const both = rows.filter(r => r.ce.ltp > 0 && r.pe.ltp > 0);
+    // stale = has a price but no trades today (only judged when the file carries volume)
+    const hasVol = rows.some(r => r.ce.vol > 0 || r.pe.vol > 0);
+    let staleN = 0;
+    rows.forEach(r => ['ce', 'pe'].forEach(s => { const o = r[s]; o.stale = hasVol && o.ltp > 0 && !(o.vol > 0); if (o.stale) staleN++; }));
+    const all2 = rows.filter(r => r.ce.ltp > 0 && r.pe.ltp > 0);
+    const liq2 = all2.filter(r => !r.ce.stale && !r.pe.stale);
+    const both = liq2.length ? liq2 : all2;
     if (!both.length) return { error: 'Need call and put prices on at least one strike to derive the forward.' };
     if (!(T > 0)) return { error: 'Expiry must be after the data time.' };
     const near = [...both].sort((a, b) => Math.abs(a.ce.ltp - a.pe.ltp) - Math.abs(b.ce.ltp - b.pe.ltp)).slice(0, 5);
@@ -465,7 +478,7 @@ const ENG = (() => {
       if (pain < minPain) { minPain = pain; maxPain = c.strike; }
     }
     const nearest = (x, s) => {
-      const c = rows.filter(r => r[s].eiv > 0);
+      const c0 = rows.filter(r => r[s].eiv > 0), c1 = c0.filter(r => !r[s].stale), c = c1.length ? c1 : c0;
       return c.length ? c.reduce((a, b) => Math.abs(b.strike - x) < Math.abs(a.strike - x) ? b : a) : null;
     };
     let skew = null, skewP = null, skewC = null;
@@ -483,7 +496,7 @@ const ENG = (() => {
       callZone: zone(top3('ce')), putZone: zone(top3('pe')),
       callAdd: maxBy('ce', 'chgOi').strike, putAdd: maxBy('pe', 'chgOi').strike,
       skew, skewP: skewP && skewP.strike, skewC: skewC && skewC.strike, provGap, engGap,
-      kmin: ks[0], kmax: ks[ks.length - 1], n: rows.length, unsolved, mism
+      kmin: ks[0], kmax: ks[ks.length - 1], n: rows.length, unsolved, mism, staleN, liquidN: liq2.length, hasVol
     };
   }
 
@@ -532,35 +545,38 @@ const ENG = (() => {
 
   /* ---------- prebuilt strategies (positioned by ATM and the 1σ move) ---------- */
   function templates(m, w) {
-    const rows = m.rows, step = m.step, F = m.F, sm = m.sigmaMove || step * 3;
-    const has = (K, s) => { const r = rows.find(x => x.strike === K); return r && r[s].ltp > 0 ? r : null; };
-    const near = (x, s) => {
-      const c = rows.filter(r => r[s].ltp > 0);
-      return c.reduce((a, b) => Math.abs(b.strike - x) < Math.abs(a.strike - x) ? b : a).strike;
-    };
-    const A = m.atm;
-    const leg = (side, type, K, lots = 1) => ({ side, type, K, lots });
+    const rows = m.rows, F = m.F, ks = rows.map(r => r.strike);
+    const sm = m.sigmaMove || m.step * 3;
+    const ok = (K, s) => { const r = rows.find(x => x.strike === K); return r && r[s].ltp > 0 && !r[s].stale ? r : null; };
+    const off = (K, n) => { const i = ks.indexOf(K), j = i + n; return i >= 0 && j >= 0 && j < ks.length ? ks[j] : null; };
+    const near = (x, s) => { const c = rows.filter(r => r[s].ltp > 0 && !r[s].stale); const pool = c.length ? c : rows; return pool.reduce((a, b) => Math.abs(b.strike - x) < Math.abs(a.strike - x) ? b : a).strike; };
+    const A = m.atm, leg = (side, type, K, lots = 1) => ({ side, type, K, lots });
+    const gap = (off(A, 1) ?? A + m.step) - A;
+    const nS = Math.max(1, Math.round(sm / 2 / gap));
+    let p = near(F - sm, 'pe'), c = near(F + sm, 'ce');
+    if (ks.indexOf(p) - w < 0) p = ks[Math.min(w, ks.length - 1)];
+    if (ks.indexOf(c) + w > ks.length - 1) c = ks[Math.max(ks.length - 1 - w, 0)];
     const T = [
       ['Bullish', 'Long Call', [leg('B', 'CE', A)]],
-      ['Bullish', 'Bull Call Spread', [leg('B', 'CE', A), leg('S', 'CE', A + w * step)]],
-      ['Bullish', 'Bull Put Spread', [leg('S', 'PE', A), leg('B', 'PE', A - w * step)]],
-      ['Bullish', 'Call Ratio Backspread', [leg('S', 'CE', A), leg('B', 'CE', A + w * step, 2)]],
-      ['Bullish', 'Bear Call Ladder', [leg('S', 'CE', A), leg('B', 'CE', A + w * step), leg('B', 'CE', A + 2 * w * step)]],
+      ['Bullish', 'Bull Call Spread', [leg('B', 'CE', A), leg('S', 'CE', off(A, w))]],
+      ['Bullish', 'Bull Put Spread', [leg('S', 'PE', A), leg('B', 'PE', off(A, -w))]],
+      ['Bullish', 'Call Ratio Backspread', [leg('S', 'CE', A), leg('B', 'CE', off(A, w), 2)]],
+      ['Bullish', 'Bear Call Ladder', [leg('S', 'CE', A), leg('B', 'CE', off(A, w)), leg('B', 'CE', off(A, 2 * w))]],
       ['Bearish', 'Long Put', [leg('B', 'PE', A)]],
-      ['Bearish', 'Bear Put Spread', [leg('B', 'PE', A), leg('S', 'PE', A - w * step)]],
-      ['Bearish', 'Bear Call Spread', [leg('S', 'CE', A), leg('B', 'CE', A + w * step)]],
-      ['Bearish', 'Put Ratio Backspread', [leg('S', 'PE', A), leg('B', 'PE', A - w * step, 2)]],
-      ['Bearish', 'Bull Put Ladder', [leg('S', 'PE', A), leg('B', 'PE', A - w * step), leg('B', 'PE', A - 2 * w * step)]],
-      ['Neutral', 'Iron Condor', (() => { const p = Math.max(near(F - sm, 'pe'), m.kmin + w * step), c = Math.min(near(F + sm, 'ce'), m.kmax - w * step); return [leg('B', 'PE', p - w * step), leg('S', 'PE', p), leg('S', 'CE', c), leg('B', 'CE', c + w * step)]; })()],
-      ['Neutral', 'Iron Butterfly', [leg('B', 'PE', A - w * step), leg('S', 'PE', A), leg('S', 'CE', A), leg('B', 'CE', A + w * step)]],
+      ['Bearish', 'Bear Put Spread', [leg('B', 'PE', A), leg('S', 'PE', off(A, -w))]],
+      ['Bearish', 'Bear Call Spread', [leg('S', 'CE', A), leg('B', 'CE', off(A, w))]],
+      ['Bearish', 'Put Ratio Backspread', [leg('S', 'PE', A), leg('B', 'PE', off(A, -w), 2)]],
+      ['Bearish', 'Bull Put Ladder', [leg('S', 'PE', A), leg('B', 'PE', off(A, -w)), leg('B', 'PE', off(A, -2 * w))]],
+      ['Neutral', 'Iron Condor', [leg('B', 'PE', off(p, -w)), leg('S', 'PE', p), leg('S', 'CE', c), leg('B', 'CE', off(c, w))]],
+      ['Neutral', 'Iron Butterfly', [leg('B', 'PE', off(A, -w)), leg('S', 'PE', A), leg('S', 'CE', A), leg('B', 'CE', off(A, w))]],
       ['Neutral', 'Short Strangle', [leg('S', 'PE', near(F - sm, 'pe')), leg('S', 'CE', near(F + sm, 'ce'))]],
-      ['Neutral', 'Jade Lizard', [leg('S', 'PE', A - w * step), leg('S', 'CE', A + w * step), leg('B', 'CE', A + 2 * w * step)]],
+      ['Neutral', 'Jade Lizard', [leg('S', 'PE', off(A, -w)), leg('S', 'CE', off(A, w)), leg('B', 'CE', off(A, 2 * w))]],
       ['Volatile', 'Long Straddle', [leg('B', 'CE', A), leg('B', 'PE', A)]],
-      ['Volatile', 'Long Strangle', (() => { const d = Math.max(step, Math.round(sm / 2 / step) * step); return [leg('B', 'PE', A - d), leg('B', 'CE', A + d)]; })()]
-      ,['Volatile', 'Reverse Condor', [leg('S', 'PE', A - 2 * w * step), leg('B', 'PE', A - w * step), leg('B', 'CE', A + w * step), leg('S', 'CE', A + 2 * w * step)]]
+      ['Volatile', 'Long Strangle', [leg('B', 'PE', off(A, -nS)), leg('B', 'CE', off(A, nS))]],
+      ['Volatile', 'Reverse Condor', [leg('S', 'PE', off(A, -2 * w)), leg('B', 'PE', off(A, -w)), leg('B', 'CE', off(A, w)), leg('S', 'CE', off(A, 2 * w))]]
     ];
     return T.map(([view, name, legs]) => {
-      const missing = legs.filter(l => !has(l.K, l.type === 'CE' ? 'ce' : 'pe')).map(l => l.K + ' ' + l.type);
+      const missing = legs.filter(l => l.K == null || !ok(l.K, l.type === 'CE' ? 'ce' : 'pe')).map(l => l.K == null ? `a ${l.type} strike beyond the loaded range` : `${l.K} ${l.type} (${rows.find(x => x.strike === l.K)?.[l.type === 'CE' ? 'ce' : 'pe']?.stale ? 'no trades today' : 'no price'})`);
       return { view, name, legs, missing };
     });
   }
@@ -587,7 +603,10 @@ const savedLots = store.get('lots') || {};
 
 const now = new Date();
 const S = { idx:'NIFTY', view: store.get('view') || 'chain', filter: store.get('pickview') || 'Chain lean', width:2, cmp:null, data:{} };
-IDX.forEach(i => S.data[i] = { files:{}, sample:false, asof: localDT(now), expiry:'', lot: savedLots[i] || LOTS[i], legs:null, m:null, err:null });
+const isStock = i => !LOTS[i];
+const stocks = (store.get('stocks') || []).filter(x => typeof x === 'string');
+function ensureData(i){ if (!S.data[i]) S.data[i] = { files:{}, sample:false, asof: localDT(new Date()), expiry:'', lot: savedLots[i] || LOTS[i] || null, legs:null, m:null, err:null }; return S.data[i]; }
+IDX.forEach(ensureData); stocks.forEach(ensureData);
 // Example data so the tool opens in a working state
 (() => {
   const d = S.data.NIFTY;
@@ -649,6 +668,7 @@ const GLOSS = {
   liq:'The call and put strike with the most open interest within 2 strikes of ATM: usually the easiest to trade, with the tightest prices.',
   level:'The index level here is worked out from option prices (put-call parity), so it lines up with the chain.'
 };
+const kOff = (m, K, n) => { const ks = m.rows.map(r => r.strike), i = ks.indexOf(K), j = i + n; return i >= 0 && j >= 0 && j < ks.length ? ks[j] : K + n * m.step; };
 const term = (label, key) => `<span class="term" tabindex="0">${label}<span class="tip" role="tooltip">${GLOSS[key]}</span></span>`;
 const BULL = {ce:{'Long build-up':1,'Short covering':1}, pe:{'Short build-up':1,'Long unwinding':1}};
 const BEAR = {ce:{'Short build-up':1,'Long unwinding':1}, pe:{'Long build-up':1,'Short covering':1}};
@@ -702,14 +722,14 @@ function chainRead(m, d){
     means:loc[2], note:`${term('Max pain','maxpain')} ${nf(m.maxPain)}, ${away(m.maxPain)}.`});
   const callTop = m.callZone.ks, putTop = m.putZone.ks;
   const sup = Math.min(...putTop), res = Math.max(...callTop);
-  const lv = [['Upside','upside',res + 3*st],['Breakout','breakout',res + st],['Resistance','resistance',res],['Support','support',sup],['Breakdown','breakdown',sup - st],['Downside','downside',sup - 3*st]];
+  const lv = [['Upside','upside',kOff(m, res, 3)],['Breakout','breakout',kOff(m, res, 1)],['Resistance','resistance',res],['Support','support',sup],['Breakdown','breakdown',kOff(m, sup, -1)],['Downside','downside',kOff(m, sup, -3)]];
   const lvRows = [...lv.map(([n, k, v]) => ({n:term(n, k), v, cls: k === 'resistance' ? 'ce' : k === 'support' ? 'pe' : ''})), {n:`<b>${ix} now</b>`, v:F, cls:'now'}].sort((a, b) => b.v - a.v);
   const ladder = `<div class="lvwrap"><table class="lv"><tbody>${lvRows.map(x => `<tr class="${x.cls}"><td>${x.n}</td><td class="r">${nf(x.v)}</td><td class="r mut">${x.cls === 'now' ? '' : (x.v >= F ? '+' : '−') + nf(Math.abs(x.v - F))}</td></tr>`).join('')}</tbody></table></div>`;
   const inside = F >= sup && F <= res;
   L.push({k:'Key levels', tag: inside ? 'Inside range' : F > res ? 'Above range' : 'Below range', tone: inside ? '' : F > res ? 'up' : 'dn',
     html:`${term('Support','support')} ${N(sup)} to ${term('resistance','resistance')} ${N(res)}: a ${N(res - sup)}-point range built from the top 3 OI strikes on each side.${ladder}`,
-    means: inside ? `${ix} is inside the range. A close above ${nf(res + st)} or below ${nf(sup - st)} would mean the writers' zone has been crossed.` : F > res ? `${ix} is above resistance, so the call writers' zone is already crossed. ${nf(res)} becomes the first level to hold on a dip.` : `${ix} is below support, so the put writers' zone is already crossed. ${nf(sup)} becomes the first level to clear on a bounce.`,
-    note:`Top 3 call OI: ${callTop.map(k => nf(k)).join(', ')}. Top 3 put OI: ${putTop.map(k => nf(k)).join(', ')}. Breakout/breakdown ±1 strike, upside/downside ±3 strikes.`});
+    means: inside ? `${ix} is inside the range. A close above ${nf(kOff(m, res, 1))} or below ${nf(kOff(m, sup, -1))} would mean the writers' zone has been crossed.` : F > res ? `${ix} is above resistance, so the call writers' zone is already crossed. ${nf(res)} becomes the first level to hold on a dip.` : `${ix} is below support, so the put writers' zone is already crossed. ${nf(sup)} becomes the first level to clear on a bounce.`,
+    note:`Top 3 call OI: ${callTop.map(k => nf(k)).join(', ')}. Top 3 put OI: ${putTop.map(k => nf(k)).join(', ')}. Breakout/breakdown = next listed strike, upside/downside = 3 listed strikes away.`});
   const avgC = m.rows.reduce((a, r) => a + (r.ce.oi||0), 0) / m.rows.length, avgP = m.rows.reduce((a, r) => a + (r.pe.oi||0), 0) / m.rows.length;
   const thin = m.rows.filter(r => (r.ce.oi||0) < avgC*0.4 && (r.pe.oi||0) < avgP*0.4).map(r => r.strike).sort((a, b) => Math.abs(a - F) - Math.abs(b - F)).slice(0, 4).sort((a, b) => a - b);
   L.push({k:term('Thin OI zones','thin'), tag: thin.length ? `${thin.length} found` : 'None', tone: thin.length ? 'wa' : '',
@@ -749,18 +769,19 @@ function chainRead(m, d){
     note:`${term('Most liquid near ATM','liq')}: ${nf(bc.strike)} CE (${lakh(bc.ce.oi)} OI) and ${nf(bp.strike)} PE (${lakh(bp.pe.oi)} OI). ${nf(m.T*365, Math.abs(m.T*365 - Math.round(m.T*365)) < 0.05 ? 0 : 1)} days to expiry.`});
   if (m.skew != null){
     const sk = m.skew;
-    const t = sk > 1.5 ? ['Puts costlier','wa','Traders are paying extra for downside protection. This is normal for an index; it signals stress only when the gap widens sharply.']
-            : sk < -1.5 ? ['Calls costlier','wa','Traders are paying extra for upside calls, which is unusual for an index and shows strong demand for a rise.']
+    const t = sk > 1.5 ? ['Puts costlier','wa',`Traders are paying extra for downside protection. ${isStock(ix) ? 'This is common for stocks too' : 'This is normal for an index'}; it signals stress only when the gap widens sharply.`]
+            : sk < -1.5 ? ['Calls costlier','wa',`Traders are paying extra for upside calls${isStock(ix) ? ', which points to strong demand for a rise (often seen around news or results).' : ', which is unusual for an index and shows strong demand for a rise.'}`]
             : ['Even','','Puts and calls at the same distance cost about the same. No extra demand for either side.'];
     V.push({k:term('Put vs call premium','skew'), tag:t[0], tone:t[1],
       html:`Put ${N(m.skewP)} (${away(m.skewP)}) carries ${N(Math.abs(sk),2)} points ${sk >= 0 ? 'more' : 'less'} IV than call ${N(m.skewC)} (${away(m.skewC)}).`,
       means:t[2], note:'Strikes about one expected move away on each side. Within 1.5 points counts as even.'});
   }
-  const iv = (m.atmIV || 0) * 100, [lo, hi] = bands[ix] || BANDS_DEFAULT[ix];
+  const iv = (m.atmIV || 0) * 100, band = bands[ix] || BANDS_DEFAULT[ix], [lo, hi] = band || [null, null];
   const hist = getHist(ix), ivs = hist.map(h => h.iv * 100).filter(x => x > 0);
   const day = F * (m.atmIV || 0) / Math.sqrt(252);
-  let reg = iv < lo ? ['Cheap premiums','up'] : iv > hi ? ['Expensive premiums','dn'] : ['Normal premiums',''];
-  let regNote = `Your ${ix} range: below ${lo}% cheap, above ${hi}% expensive. ${ivs.length} of 20 uploads saved; after 20, today is ranked against your own past uploads.`;
+  let reg = !band ? ['No IV reference yet',''] : iv < lo ? ['Cheap premiums','up'] : iv > hi ? ['Expensive premiums','dn'] : ['Normal premiums',''];
+  let regNote = band ? `Your ${ix} range: below ${lo}% cheap, above ${hi}% expensive. ${ivs.length} of 20 uploads saved; after 20, today is ranked against your own past uploads.`
+    : `Stock IVs differ too much for a preset range. ${ivs.length} of 20 ${ix} uploads saved; after 20, today is ranked against this stock's own history. You can set a range below if you know its usual IV.`;
   if (ivs.length >= 20){
     const pr = ivs.filter(x => x < iv).length / ivs.length * 100;
     reg = pr < 25 ? ['Cheap premiums','up'] : pr > 75 ? ['Expensive premiums','dn'] : ['Normal premiums',''];
@@ -768,10 +789,11 @@ function chainRead(m, d){
   }
   const impl = reg[0] === 'Cheap premiums' ? 'Options are cheap: buying costs less, and sellers collect less for the same risk.'
              : reg[0] === 'Expensive premiums' ? 'Options are expensive: sellers are paid more for the same risk; buyers need a bigger move and lose if IV falls.'
-             : 'Options are fairly priced: buyers are not overpaying and sellers are not getting extra.';
+             : reg[0] === 'Normal premiums' ? 'Options are fairly priced: buyers are not overpaying and sellers are not getting extra.'
+             : 'There is no reference yet to call this IV cheap or expensive for this stock.';
   V.push({k:'Premium level', tag:reg[0], tone:reg[1],
     html:`${term('ATM IV','iv')} ${N(iv,2)}%. Option prices assume ${ix} moves about ${N(day)} points (${nf(day/F*100,2)}%) on a typical day.`,
-    means:impl, note:`${regNote} Daily move = ${ix} × IV ÷ √252.`, bands:true});
+    means:impl + (isStock(ix) ? ' IV usually rises before quarterly results and drops after them, so check the results date before reading this.' : ''), note:`${regNote} Daily move = ${ix} × IV ÷ √252.`, bands:true});
   const th = Math.abs((m.atmRow.ce.eg?.theta || 0) + (m.atmRow.pe.eg?.theta || 0));
   V.push({k:term('Time decay','theta'), tag:`₹${nf(th*d.lot)}/day`, tone:'',
     html:`The ${N(m.atm)} straddle loses about ${N(th,2)} points a day: ₹${N(th*d.lot)} per lot of ${d.lot}.`,
@@ -783,7 +805,7 @@ function chainRead(m, d){
   return { headline, secs, lean: flow[0] === 'Leans up' ? 'Bullish' : flow[0] === 'Leans down' ? 'Bearish' : 'Neutral', sup, res, reg: reg[0], flipK, bestCE: bc.strike, bestPE: bp.strike, flowCE: top('ce'), flowPE: top('pe'), hv, posTag: pos[0], g0, cv, pv };
 }
 function readHTML(m, d){
-  const r = chainRead(m, d), [lo, hi] = bands[S.idx] || BANDS_DEFAULT[S.idx];
+  const r = chainRead(m, d), [lo, hi] = bands[S.idx] || BANDS_DEFAULT[S.idx] || ['', ''];
   return `<section class="panel read" aria-label="Chain read"><p class="eyebrow">Chain read · ${S.idx} · expiry ${esc(dateTxt(d.expiry))}</p><h2>${esc(r.headline)}</h2>
     <p class="lead">A plain-language read of this option chain. It describes positioning and pricing; it is not a trade suggestion. Visible only to you. Hover any underlined term for its meaning.</p>
     ${r.secs.map(([title, rows]) => `<h3 class="rsec">${title}</h3>${rows.map(x => `<div class="rrow"><div class="rk">${x.k}</div><div class="rv"><span class="rtag ${x.tone}">${esc(x.tag)}</span>${x.html}
@@ -797,6 +819,7 @@ function recompute(i = S.idx){
   const d = S.data[i]; d.m = null; d.err = null;
   if (!Object.keys(d.files).length) return;
   if (!d.expiry){ d.err = 'Set the expiry date of the uploaded chain to run the engine.'; return; }
+  if (!(d.lot > 0)){ d.err = `Enter the lot size for ${i} in the bar above. Lot sizes are set by the exchange and revised from time to time, so check the current one.`; return; }
   const T = (new Date(d.expiry + 'T15:30') - new Date(d.asof)) / (365 * 864e5);
   d.merged = ENG.merge(d.files);
   const m = ENG.model(d.merged, T);
@@ -823,7 +846,9 @@ function ageBadge(d){
 
 /* ---------- top chrome ---------- */
 function renderTop(){
-  $('#idxTabs').innerHTML = IDX.map(i => `<button type="button" data-idx="${i}" aria-pressed="${i === S.idx}">${i}</button>`).join('');
+  $('#idxTabs').innerHTML = [...IDX, ...stocks].map(i => `<button type="button" data-idx="${i}" aria-pressed="${i === S.idx}">${i}</button>`).join('')
+    + (S.adding ? `<form id="addStock" class="addstock"><label class="sr" for="newSym">Stock symbol</label><input id="newSym" autocomplete="off" maxlength="20" placeholder="e.g. RELIANCE" required><button type="submit">Add</button><button type="button" data-act="addcancel" aria-label="Cancel">×</button></form>`
+       : `<button type="button" data-act="addstock">+ Stock</button>`);
   const d = S.data[S.idx];
   $('#bannerSlot').innerHTML = '';
   const files = Object.entries(d.files).map(([f, o]) => `<span class="chip"><b>${roleOf(d.files, f)}</b><span class="mut">${o.rows.length} strikes</span><button class="x" type="button" data-rm="${f}" aria-label="Remove ${roleOf(d.files, f).toLowerCase()}">×</button></span>`).join('');
@@ -831,8 +856,8 @@ function renderTop(){
     <div class="chips">${files || '<span class="note">No file loaded for ' + S.idx + '</span>'}${ageBadge(d)}</div>
     <div class="field"><label for="asof">Data time</label><input type="datetime-local" id="asof" value="${d.asof}"></div>
     <div class="field"><label for="expiry">Expiry</label><input type="date" id="expiry" value="${d.expiry}"></div>
-    <div class="field"><label for="lot">Lot size</label><input type="number" id="lot" min="1" step="1" value="${d.lot}"></div>
-    <button class="btn small" type="button" data-act="resetidx" title="Clears the loaded files, the tracked position and its P&amp;L history for ${S.idx}">${S.armReset ? `Click again to reset ${S.idx}` : `Reset ${S.idx}`}</button>`;
+    <div class="field"><label for="lot">Lot size</label><input type="number" id="lot" min="1" step="1" value="${d.lot || ''}" placeholder="required"></div>
+    <button class="btn small" type="button" data-act="resetidx" title="${isStock(S.idx) ? 'Removes this stock with its files, tracked position and P&amp;L history' : 'Clears the loaded files, the tracked position and its P&amp;L history'} for ${S.idx}">${S.armReset ? `Click again to ${isStock(S.idx) ? 'remove' : 'reset'} ${S.idx}` : `${isStock(S.idx) ? 'Remove' : 'Reset'} ${S.idx}`}</button>`;
   const views = [['chain','Option chain'],['greeks','Greeks & IV'],['compare','Multistrike'],['strategies','Strategies'],['builder','Strategy builder'],['position','Position'],['share','Share & export']];
   $('#viewTabs').innerHTML = views.map(([k, t]) => `<button type="button" role="tab" data-view="${k}" aria-selected="${k === S.view}">${t}</button>`).join('');
 }
@@ -842,7 +867,7 @@ function render(){
   renderTop();
   const d = S.data[S.idx], v = $('#view');
   if (!Object.keys(d.files).length){
-    v.innerHTML = `<div class="empty"><h2>Load a ${S.idx} option chain</h2>
+    v.innerHTML = `<div class="empty"><h2>Load a ${S.idx} option chain</h2>${isStock(S.idx) && !d.lot ? `<p><b>First enter the ${S.idx} lot size</b> in the bar above.</p>` : ''}
       <p>Upload one option-chain export, or two exports of the same expiry from different providers. With two files, the self-describing layout (columns like strike_price) is used as primary and the mirrored layout adds day open/high/low and a cross-check. Drop the files anywhere on this page or use the button.</p>
       <label class="btn primary" for="fileIn">Upload CSV</label></div>`;
     return;
@@ -874,8 +899,8 @@ function metricsHTML(m){
 function ladderTags(m, cr){
   const st = m.step, T = {};
   const add = (k, side, label, cls) => { if (k == null) return; const key = m.rows.some(r => r.strike === k) ? k : m.rows.reduce((a, r) => Math.abs(r.strike - k) < Math.abs(a - k) ? r.strike : a, m.rows[0].strike); (T[key] = T[key] || {ce:[], pe:[], mid:[]})[side].push([label, cls]); };
-  add(cr.res, 'ce', 'Resistance', 'ce'); add(m.callWall, 'ce', 'Call wall', 'ce'); add(cr.res + st, 'ce', 'Breakout', ''); add(cr.res + 3*st, 'ce', 'Upside', ''); add(cr.bestCE, 'ce', 'CE liquidity', 'liq');
-  add(cr.sup, 'pe', 'Support', 'pe'); add(m.putWall, 'pe', 'Put wall', 'pe'); add(cr.sup - st, 'pe', 'Breakdown', ''); add(cr.sup - 3*st, 'pe', 'Downside', ''); add(cr.bestPE, 'pe', 'PE liquidity', 'liq');
+  add(cr.res, 'ce', 'Resistance', 'ce'); add(m.callWall, 'ce', 'Call wall', 'ce'); add(kOff(m, cr.res, 1), 'ce', 'Breakout', ''); add(kOff(m, cr.res, 3), 'ce', 'Upside', ''); add(cr.bestCE, 'ce', 'CE liquidity', 'liq');
+  add(cr.sup, 'pe', 'Support', 'pe'); add(m.putWall, 'pe', 'Put wall', 'pe'); add(kOff(m, cr.sup, -1), 'pe', 'Breakdown', ''); add(kOff(m, cr.sup, -3), 'pe', 'Downside', ''); add(cr.bestPE, 'pe', 'PE liquidity', 'liq');
   add(m.maxPain, 'mid', 'Max pain', ''); if (cr.flipK) add(cr.flipK, 'mid', 'Gamma flip', '');
   return T;
 }
@@ -892,9 +917,9 @@ function vChain(m){
     const tg = LT[r.strike] || {};
     return `<tr class="${r.strike === m.atm ? 'atm' : ''}">
       <td class="l tags">${ltag(tg.ce)}</td>${oiCell(r.ce,'ce')}<td class="${cls(r.ce.chgOi)}${itmC}">${sgn(r.ce.chgOi, lakh)}</td><td class="l${itmC}">${bu(r.ce.build)}</td>
-      <td class="${itmC}">${lakh(r.ce.vol)}</td><td class="${itmC}">${pctv(r.ce.eiv)}</td><td class="${itmC}"><b>${nf(r.ce.ltp,2)}</b>${fc}</td>
+      <td class="${itmC}">${lakh(r.ce.vol)}</td><td class="${itmC}${r.ce.stale ? ' mut' : ''}">${pctv(r.ce.eiv)}</td><td class="${itmC}${r.ce.stale ? ' stale' : ''}" ${r.ce.stale ? 'title="No trades today: this price may be old"' : ''}><b>${nf(r.ce.ltp,2)}</b>${fc}</td>
       <td class="k">${nf(r.strike)}${tg.mid ? `<div class="midtags">${ltag(tg.mid)}</div>` : ''}</td>
-      <td class="${itmP}"><b>${nf(r.pe.ltp,2)}</b>${fp}</td><td class="${itmP}">${pctv(r.pe.eiv)}</td><td class="${itmP}">${lakh(r.pe.vol)}</td>
+      <td class="${itmP}${r.pe.stale ? ' stale' : ''}" ${r.pe.stale ? 'title="No trades today: this price may be old"' : ''}><b>${nf(r.pe.ltp,2)}</b>${fp}</td><td class="${itmP}${r.pe.stale ? ' mut' : ''}">${pctv(r.pe.eiv)}</td><td class="${itmP}">${lakh(r.pe.vol)}</td>
       <td class="l${itmP}">${bu(r.pe.build)}</td><td class="${cls(r.pe.chgOi)}${itmP}">${sgn(r.pe.chgOi, lakh)}</td>${oiCell(r.pe,'pe')}<td class="l tags">${ltag(tg.pe)}</td></tr>`;
   }).join('');
   return `<div style="display:flex;flex-direction:column;gap:14px">${readHTML(m, S.data[S.idx])}${metricsHTML(m)}
@@ -903,7 +928,7 @@ function vChain(m){
     <tr><th class="l">Key levels</th><th>OI</th><th>Chg OI</th><th class="l">Build-up</th><th>Volume</th><th>IV</th><th>LTP</th><th style="text-align:center">Strike</th><th>LTP</th><th>IV</th><th>Volume</th><th class="l">Build-up</th><th>Chg OI</th><th>OI</th><th class="l">Key levels</th></tr></thead>
     <tbody>${body}</tbody></table></div>
   <div class="legend"><span>Key levels: support and resistance = outermost of the top-3 OI strikes; breakout/breakdown ±1 strike; upside/downside ±3 strikes; CE/PE liquidity = highest OI within 2 strikes of ATM. Max pain and gamma flip sit under the strike.</span></div>
-  <div class="legend"><span>IV = engine IV from LTP</span><span>Shaded = in the money vs forward</span><span>Dark strike = ATM</span><span><span class="flag" style="margin:0 5px 0 0"></span>source mismatch (LTP &gt; 2% or OI &gt; 5%)</span><span>OI in units; L = lakh</span></div>
+  <div class="legend"><span>IV = engine IV from LTP</span><span>Shaded = in the money vs forward</span><span>Dark strike = ATM</span><span><span class="flag" style="margin:0 5px 0 0"></span>source mismatch (LTP &gt; 2% or OI &gt; 5%)</span><span>OI in units; L = lakh</span>${m.staleN ? `<span><s>Struck-through LTP</s> = no trades today; not used for the price level or strategies</span>` : ''}</div>
   </div>`;
 }
 
@@ -952,6 +977,7 @@ function vGreeks(m, d){
   q.push(`Forward ${nf(m.F,2)} from put-call parity; the ${m.Fn} strikes used agree within ${nf(m.Fspread,2)} points.`);
   if (m.provGap != null) q.push(`At ATM ${nf(m.atm)}, provider call IV and put IV differ by ${nf(Math.abs(m.provGap),2)} pts, which means the provider priced against a different underlying. Engine IVs differ by ${nf(Math.abs(m.engGap ?? 0),2)} pts, as parity requires.`);
   if (m.mism.length) q.push(`Source mismatch on ${m.mism.length} strike${m.mism.length > 1 ? 's' : ''}: ${m.mism.map(r => nf(r.strike) + ' ' + ['ce','pe'].filter(s => r.mismatch[s]).map(s => s.toUpperCase()).join('/')).join(', ')}. The files were taken a few minutes apart; check that both are from the same moment.`);
+  if (m.staleN) q.push(`${m.staleN} quotes had a price but no trades today. They are kept in the chain but not used to work out the ${S.idx} level or to place strategies. The level used ${m.liquidN} strikes traded on both sides.`);
   if (m.unsolved) q.push(`${m.unsolved} option prices sit at or below intrinsic value against the forward, so no IV could be solved for them (typical for deep in-the-money strikes).`);
   return `<div style="display:flex;flex-direction:column;gap:14px">
   <div class="grid2">
@@ -1017,6 +1043,7 @@ function fitScore(t, st, legs, m, ctx){
   // 1. premium level (30): long-volatility structures want cheap IV, short-volatility want rich IV, spreads are neutral to it
   const longVol = ['single','back','longVol'].includes(fam), shortNaked = fam === 'nakedN';
   let iv;
+  if (!['Cheap premiums','Normal premiums','Expensive premiums'].includes(reg)){ iv = 15; R.push(`No IV reference yet for ${S.idx} (${ivTxt}), so the premium level is not scored as an edge either way.`); } else
   if (longVol){ iv = reg === 'Cheap premiums' ? 30 : reg === 'Expensive premiums' ? 6 : 15;
     R.push(reg === 'Cheap premiums' ? `Cheap premiums (${ivTxt}): buying options is inexpensive, which suits this long-option structure.` : reg === 'Expensive premiums' ? `Expensive premiums (${ivTxt}): this structure buys options at above-normal prices.` : `Normal premiums (${ivTxt}): no price edge for a structure that is net long options.`); }
   else if (shortNaked){ iv = reg === 'Expensive premiums' ? 30 : reg === 'Cheap premiums' ? 4 : 14;
@@ -1088,7 +1115,7 @@ function vStrats(m, d){
     <div class="panel"><div class="panel-head"><div><h2>Strategy finder</h2><p class="note" style="margin:4px 0 0">You set the direction; the chain picks the structure. ${leanTxt}</p></div></div>
       <div class="filters"><span class="note" style="margin-right:4px">Your view</span>${views.map(v => `<button type="button" class="pill" data-filter="${v}" aria-pressed="${S.filter === v}">${v === 'Chain lean' ? `Chain lean (${cr.lean})` : v}</button>`).join('')}
       <label class="note" for="width" style="margin-left:10px">Spread width</label><select id="width" class="pill">${[1,2,3,4].map(w => `<option value="${w}" ${w === S.width ? 'selected' : ''}>${w} strike${w > 1 ? 's' : ''}</option>`).join('')}</select></div>
-      ${ranked ? `<p class="note" style="margin:10px 0 0">Fit score out of 100: premium level vs strategy type (30), short strikes vs support ${nf(cr.sup)} and resistance ${nf(cr.res)} (25), breakevens vs the expected range (25), defined risk (10), PoP or reward:risk (10). Prices use LTP and your lot size of ${d.lot}. Your own analysis and risk limits come first.</p>` : ''}</div>
+      ${ranked ? `<p class="note" style="margin:10px 0 0">Fit score out of 100: premium level vs strategy type (30), short strikes vs support ${nf(cr.sup)} and resistance ${nf(cr.res)} (25), breakevens vs the expected range (25), defined risk (10), PoP or reward:risk (10). Prices use LTP and your lot size of ${d.lot}. Your own analysis and risk limits come first.</p>` : ''}${isStock(S.idx) ? `<p class="settle" style="margin-top:10px"><b>${S.idx} options are physically settled.</b> Short legs and long legs that finish in the money turn into share delivery at expiry, and margins rise in the final days. Structures meant to be held to expiry carry that obligation.</p>` : ''}${m.staleN ? `<p class="note" style="margin:8px 0 0">${m.staleN} quotes in this file had no trades today and are skipped when placing strategies.</p>` : ''}</div>
     <div class="cards">${cards}</div></div>`;
 }
 
@@ -1143,7 +1170,7 @@ function vBuilder(m, d){
   return `<div style="display:flex;flex-direction:column;gap:14px">
     <div class="panel"><div class="panel-head"><h2>Legs</h2><div class="actions"><button class="btn small" type="button" data-act="add">Add leg</button><button class="btn small" type="button" data-act="reset">Clear legs</button><button class="btn small primary" type="button" data-act="track">${getPos(S.idx) ? 'Track this position (replaces current)' : 'Track this position'}</button></div></div>
     ${d.legs.length ? `<div class="tbl-wrap"><table class="legtbl"><thead><tr><th class="l">Side</th><th class="l">Type</th><th class="l">Strike</th><th class="l">Lots</th><th class="l">Entry premium</th><th>Engine IV</th><th></th></tr></thead><tbody>${legRows}</tbody></table></div>
-      <p class="note" style="margin:8px 0 0">Entry premium starts at the file's LTP. Edit it to your actual fill.</p>` : '<p class="note">No legs yet. Add a leg or open a structure from the Strategies tab.</p>'}
+      <p class="note" style="margin:8px 0 0">Entry premium starts at the file's LTP. Edit it to your actual fill.</p>${settleNote(d.legs, m.F, d.lot, S.idx)}` : '<p class="note">No legs yet. Add a leg or open a structure from the Strategies tab.</p>'}
     ${sum}</div>
     ${st ? `<div class="panel"><div class="panel-head"><h2>Payoff</h2><div class="legend"><span><i style="background:var(--ink)"></i>At expiry</span><span><i style="background:var(--orange)"></i>Today (T+0, Black-76)</span><span>○ breakeven</span></div></div>${payoffSVG(st, m)}</div>` : ''}
     ${st ? explainHTML(st, d.legs, m, d) : ''}
@@ -1228,6 +1255,7 @@ function explainHTML(st, legsIn, m, d){
     ['Risk', [
       ['What could go wrong?', `<p>A 2σ move by expiry (±${N(2*sm)} points, roughly a 1-in-20 outcome either side) would leave the position at ${r(worst2)}. A 3-point fall in IV would change it by about ${r(ivDrop)} today. Gaps around events can be larger than the model expects.</p>`],
       ['What is the reward-to-risk?', `<p>${st.rr != null ? `<b>${N(st.rr,2)} : 1</b>: you stand to make ${r(st.maxProfit)} for ${r(-st.maxLoss)} at risk.` : isFinite(st.maxLoss) ? 'Reward is unlimited against a defined risk of ' + r(st.maxLoss) + '.' : 'Not defined: the loss side is unlimited.'}</p>`],
+      ...(isStock(ix) ? [['What about physical settlement?', settleNote(legs.map(l => ({...l, side:l.side, type:l.type, K:l.K, lots:l.lots})), F, lot, ix).replace('<p class="settle">', '<p>')]] : []),
       ['What is the chance of ending in profit?', `<p>About <b>${st.pop == null ? '–' : pctv(st.pop)}</b> at expiry, from a lognormal model at ATM IV ${pctv(m.atmIV,2)}. It is a model estimate, not a guarantee.</p>`]
     ]],
     ['Sizing and execution', [
@@ -1312,6 +1340,13 @@ async function loadPosFiles(list){
   else { const h = (getPos(S.idx).hist || []); const last = h[h.length - 1]; toast(`Prices updated to ${dateTxt(d.asof)}. P&L ${last ? rupee(last.pl) : ''}.`); }
 }
 
+function settleNote(legs, F, lot, ix){
+  if (!isStock(ix)) return '';
+  const itm = legs.filter(l => (l.type === 'CE' ? F > l.K : F < l.K));
+  const what = l => `${l.side === 'B' ? (l.type === 'CE' ? 'buy' : 'sell') : (l.type === 'CE' ? 'sell' : 'buy')} ${nf(l.lots * lot)} shares at ${nf(l.K)}`;
+  return `<p class="settle"><b>Physical settlement:</b> ${ix} options settle in shares. Any leg in the money at expiry becomes a delivery: long call or short put means buying the shares, long put or short call means selling them. Brokers raise margins in the last days before expiry and may square off positions that are in the money. ${itm.length ? `At ${nf(F)}, in the money now: ${itm.map(l => `${l.side === 'B' ? 'Buy' : 'Sell'} ${nf(l.K)} ${l.type} (would ${what(l)})`).join('; ')}.` : `At ${nf(F)}, no leg is in the money.`}</p>`;
+}
+
 function vPosition(m, d){
   const p = getPos(S.idx);
   if (!p) return `<div class="empty"><h2>No ${S.idx} position tracked</h2>
@@ -1343,6 +1378,7 @@ function vPosition(m, d){
       <div class="metric"><span class="k">PoP from here</span><span class="v">${st.pop == null ? '–' : pctv(st.pop)}</span><span class="s">breakeven ${st.be.map(x => nf(x)).join(' / ') || '–'}</span></div>
     </div>
     <div class="tbl-wrap" style="margin-top:12px"><table><thead><tr><th class="l">Leg</th><th>Lots</th><th>Entry</th><th>${manual ? 'Now (type price)' : 'Now'}</th><th>Change</th><th>P&amp;L</th><th>${manual ? 'Last file LTP' : 'IV now'}</th></tr></thead><tbody>${legRows}</tbody></table></div>
+    ${settleNote(L, manual && p.manualSpot > 0 ? p.manualSpot : F, lot, S.idx)}
     ${manual ? `<div class="updrow"><div class="field"><label for="manSpot">${S.idx} level now (optional)</label><input type="number" id="manSpot" step="0.05" min="0" value="${p.manualSpot != null ? p.manualSpot : ''}" placeholder="${nf(F)}"></div>
       <button class="btn small primary" type="button" data-act="logmanual">Log to history</button>
       <button class="btn small" type="button" data-act="resetmanual">Reset to file prices</button>
@@ -1478,8 +1514,8 @@ function textReport(m, d){
   L.push('*Key levels*');
   L.push(`• Resistance ${nf(cr.res)}: call writers are concentrated here (highest of the top-3 call OI strikes)`);
   L.push(`• Support ${nf(cr.sup)}: put writers are concentrated here (lowest of the top-3 put OI strikes)`);
-  L.push(`• Above ${nf(cr.res + st)}: breakout reference · above ${nf(cr.res + 3*st)}: upside reference`);
-  L.push(`• Below ${nf(cr.sup - st)}: breakdown reference · below ${nf(cr.sup - 3*st)}: downside reference`);
+  L.push(`• Above ${nf(kOff(m, cr.res, 1))}: breakout reference · above ${nf(kOff(m, cr.res, 3))}: upside reference`);
+  L.push(`• Below ${nf(kOff(m, cr.sup, -1))}: breakdown reference · below ${nf(kOff(m, cr.sup, -3))}: downside reference`);
   L.push(`• Range ${nf(cr.sup)}–${nf(cr.res)}: ${nf(width)} points, ${nf(ratio,1)}× the market's expected move`);
   L.push('');
   L.push('*Positioning*');
@@ -1735,7 +1771,11 @@ document.addEventListener('click', e => {
       h.push({ asof: at, F: p.manualSpot != null ? p.manualSpot : d.m.F, pl, manual: true }); h.sort((a, b) => a.asof < b.asof ? -1 : 1); p.hist = h.slice(-200); setPos(S.idx, p); toast(`Logged ${rupee(pl)} at ${dateTxt(at)}.`); render(); } }
   else if (a === 'resetmanual'){ const p = getPos(S.idx); if (p){ p.manual = {}; p.manualSpot = null; p.manualAt = null; setPos(S.idx, p); toast('Prices reset to the last file.'); render(); } }
   else if (a === 'clearhist'){ const p = getPos(S.idx); if (S.armHist && p){ p.hist = []; setPos(S.idx, p); S.armHist = false; toast('P&L history cleared.'); } else S.armHist = true; render(); }
-  else if (a === 'resetidx'){ if (S.armReset){ d.files = {}; d.sample = false; d.expiry = ''; d.asof = localDT(new Date()); d.legs = null; d.m = null; d.err = null; store.set(posKey(S.idx), null); WI.key = ''; S.armReset = false; toast(`${S.idx} reset. Upload a chain to start again.`); } else S.armReset = true; render(); }
+  else if (a === 'resetidx'){ if (S.armReset){ store.set(posKey(S.idx), null); WI.key = ''; S.armReset = false;
+      if (isStock(S.idx)){ const gone = S.idx; stocks.splice(stocks.indexOf(gone), 1); store.set('stocks', stocks); store.set(histKey(gone), null); delete S.data[gone]; S.idx = 'NIFTY'; recompute(); toast(`${gone} removed.`); }
+      else { d.files = {}; d.sample = false; d.expiry = ''; d.asof = localDT(new Date()); d.legs = null; d.m = null; d.err = null; toast(`${S.idx} reset. Upload a chain to start again.`); } } else S.armReset = true; render(); }
+  else if (a === 'addstock'){ S.adding = true; render(); setTimeout(() => { const x = document.getElementById('newSym'); if (x) x.focus(); }, 0); }
+  else if (a === 'addcancel'){ S.adding = false; render(); }
   else if (a === 'wibase'){ WI.base = t.dataset.val; store.set('wibase', WI.base); WI.key = ''; render(); }
   else if (a === 'wireset'){ WI.key = ''; render(); }
   else if (a === 'copytxt'){ const ta = document.getElementById('txtReport'); const code = textReport(d.m, d);
@@ -1749,6 +1789,14 @@ document.addEventListener('click', e => {
   else if (a === 'png') dlPng();
   else if (a === 'csv') dlCsv();
 });
+document.addEventListener('submit', e => {
+  if (e.target.id !== 'addStock') return; e.preventDefault();
+  const sym = (document.getElementById('newSym').value || '').toUpperCase().replace(/[^A-Z0-9&-]/g, '').slice(0, 20);
+  if (!sym){ toast('Type a symbol, e.g. RELIANCE.'); return; }
+  if (!IDX.includes(sym) && !stocks.includes(sym)){ stocks.push(sym); store.set('stocks', stocks); }
+  ensureData(sym); S.idx = sym; S.adding = false; recompute(); render();
+  toast(isStock(sym) && !S.data[sym].lot ? `${sym} added. Enter its lot size, then upload a chain.` : `${sym} selected.`);
+});
 document.addEventListener('change', e => {
   const t = e.target, d = S.data[S.idx];
   if (['wiSpot','wiDays','wiIv','wiSpotN','wiDaysN','wiIvN','riskAmt','manSpot'].includes(t.id) || t.dataset.mp) return;
@@ -1756,9 +1804,9 @@ document.addEventListener('change', e => {
   if (t.id === 'posAsof') return;
   if (t.id === 'fileIn'){ loadFiles([...t.files]); t.value = ''; return; }
   if (t.id === 'asof' || t.id === 'expiry'){ d[t.id] = t.value; recompute(); render(); return; }
-  if (t.id === 'lot'){ const v = Math.max(1, Math.round(+t.value || 1)); d.lot = v; savedLots[S.idx] = v; store.set('lots', savedLots); render(); return; }
+  if (t.id === 'lot'){ const v = Math.max(1, Math.round(+t.value || 1)); d.lot = v; savedLots[S.idx] = v; store.set('lots', savedLots); recompute(); render(); return; }
   if (t.id === 'width'){ S.width = +t.value; render(); return; }
-  if (t.id === 'bandLo' || t.id === 'bandHi'){ const cur = (bands[S.idx] || BANDS_DEFAULT[S.idx]).slice(); cur[t.id === 'bandLo' ? 0 : 1] = Math.max(1, +t.value || 1); if (cur[0] > cur[1]) cur.reverse(); bands[S.idx] = cur; store.set('bands', bands); render(); return; }
+  if (t.id === 'bandLo' || t.id === 'bandHi'){ const cur = (bands[S.idx] || BANDS_DEFAULT[S.idx] || [+document.getElementById('bandLo').value || 20, +document.getElementById('bandHi').value || 40]).slice(); cur[t.id === 'bandLo' ? 0 : 1] = Math.max(1, +t.value || 1); if (cur[0] > cur[1]) cur.reverse(); bands[S.idx] = cur; store.set('bands', bands); render(); return; }
   if (t.dataset.leg != null){
     const l = d.legs[+t.dataset.leg], k = t.dataset.set;
     if (k === 'type' || k === 'K'){ l[k] = k === 'K' ? +t.value : t.value; const r = row(d.m, l.K), o = r && r[l.type === 'CE' ? 'ce' : 'pe']; l.prem = o ? o.ltp : 0; l.iv = o ? o.eiv : null; l.auto = true; }
