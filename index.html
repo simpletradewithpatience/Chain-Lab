@@ -1,0 +1,1791 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>STWP Chain Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&display=swap">
+<style>
+/* Layout: one working column — toolbar, status strip, view tabs, then the active view. Ledger feel: serif names, sans UI, mono numbers. */
+:root{
+  --bg:#EEF2EE; --surface:#FFFFFF; --sunk:#F5F8F5; --ink:#17201B; --muted:#5C6962; --line:#D7DFD8; --line-2:#E6ECE7;
+  --green:#027B06; --orange:#F99309; --red:#D8262F; --green-soft:#E3F1E3; --red-soft:#FBE5E6; --orange-soft:#FEF0DB;
+  --ce:#D8262F; --pe:#027B06; --focus:#027B06;
+  --f-display:"Source Serif 4", Georgia, "Times New Roman", serif;
+  --f-ui:"IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --f-num:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0E1310; --surface:#151C17; --sunk:#111713; --ink:#E4EBE5; --muted:#91A097; --line:#2A352D; --line-2:#212A23;
+  --green:#45B84C; --orange:#F7A43A; --red:#EF5A61; --green-soft:#17301A; --red-soft:#3A1A1C; --orange-soft:#3A2A12;
+  --ce:#EF5A61; --pe:#45B84C; --focus:#45B84C; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0E1310; --surface:#151C17; --sunk:#111713; --ink:#E4EBE5; --muted:#91A097; --line:#2A352D; --line-2:#212A23;
+  --green:#45B84C; --orange:#F7A43A; --red:#EF5A61; --green-soft:#17301A; --red-soft:#3A1A1C; --orange-soft:#3A2A12;
+  --ce:#EF5A61; --pe:#45B84C; --focus:#45B84C; color-scheme:dark }
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:14px/1.5 var(--f-ui);margin:0}
+.wrap{max-width:1240px;margin:0 auto;padding-inline:16px;padding-block:16px 40px;display:flex;flex-direction:column;gap:14px}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.num{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0}
+
+/* toolbar */
+.top{display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px}
+.brand{display:flex;align-items:baseline;gap:10px;margin-right:auto}
+.brand .mark{font:600 11px/1 var(--f-num);letter-spacing:.14em;color:var(--green);border:1px solid var(--green);padding:4px 6px;border-radius:3px}
+.brand h1{font-size:24px;font-weight:600}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;background:var(--surface);padding:2px}
+.seg button{border:0;background:none;padding:6px 12px;border-radius:4px;cursor:pointer;font-weight:500;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);padding:7px 12px;border-radius:6px;cursor:pointer;font-weight:500;white-space:nowrap}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--green);border-color:var(--green);color:#fff}
+.btn.small{padding:4px 9px;font-size:12.5px}
+.actions{display:flex;flex-wrap:wrap;gap:8px}
+
+/* status strip */
+.status{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:end;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 14px}
+.field{display:flex;flex-direction:column;gap:3px;min-width:0}
+.field label{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.field input,.field select{border:1px solid var(--line);background:var(--sunk);border-radius:5px;padding:5px 8px;font-family:var(--f-num);font-size:13px;max-width:100%}
+.field input[type=number]{width:90px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-right:auto;min-width:0}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:12.5px;background:var(--sunk);max-width:100%}
+.chip b{font-weight:600}
+.age{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:3px 10px;font-size:12.5px;font-weight:500;border:1px solid transparent}
+.age::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.age.up{background:var(--green-soft);color:var(--green)} .age.wa{background:var(--orange-soft);color:var(--ink)} .age.dn{background:var(--red-soft);color:var(--red)}
+.chip .x{border:0;background:none;cursor:pointer;color:var(--muted);padding:0 0 0 2px;font-size:14px;line-height:1}
+.note{font-size:12.5px;color:var(--muted)}
+.banner{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;background:var(--orange-soft);border:1px solid var(--orange);border-radius:8px;padding:9px 14px;font-size:13px}
+.banner p{margin:0;flex:1 1 300px}
+
+/* view tabs */
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);overflow-x:auto}
+.tabs button{border:0;background:none;padding:9px 14px;cursor:pointer;color:var(--muted);font-weight:500;border-bottom:2px solid transparent;white-space:nowrap;margin-bottom:-1px}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--green)}
+
+/* panels */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px;min-width:0}
+.panel h2{font-size:18px;font-weight:600}
+.panel-head{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:baseline;justify-content:space-between;margin-bottom:12px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr));gap:14px}
+
+.metrics{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;border:1px solid var(--line);border-radius:8px;background:var(--surface);overflow:hidden}
+.metric{padding:11px 14px;border-right:1px solid var(--line-2);border-bottom:1px solid var(--line-2);display:flex;flex-direction:column;gap:2px;min-width:0}
+@media (max-width:900px){.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.metric .k{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.metric .v{font:600 19px/1.25 var(--f-num);font-variant-numeric:tabular-nums}
+.metric .s{font-size:12px;color:var(--muted)}
+.v.ce{color:var(--ce)} .v.pe{color:var(--pe)}
+
+/* tables */
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+th,td{padding:6px 9px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line-2)}
+th{font-weight:600;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);background:var(--sunk);position:sticky;top:0}
+td{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+td.l,th.l{text-align:left}
+tr.grp th{background:var(--surface);font-size:11.5px}
+th.ceh{color:var(--ce)} th.peh{color:var(--pe)}
+td.k{text-align:center;font-weight:600;background:var(--sunk);border-inline:1px solid var(--line)}
+tr.atm td.k{background:var(--ink);color:var(--surface)}
+td.itm{background:color-mix(in srgb,var(--orange) 7%,transparent)}
+.oi{position:relative}
+.oi .bar{position:absolute;bottom:3px;height:3px;opacity:.75;border-radius:2px}
+.oi.ce .bar{right:0;background:var(--ce)} .oi.pe .bar{left:0;background:var(--pe)}
+.oi span{position:relative}
+.pos{color:var(--green)} .neg{color:var(--red)} .mut{color:var(--muted)}
+.tags{min-width:110px;white-space:normal!important}
+.lt{display:inline-block;font:500 10.5px/1.3 var(--f-ui);padding:1px 6px;margin:1px 3px 1px 0;border-radius:3px;background:var(--sunk);border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+.lt.ce{background:var(--red-soft);color:var(--red);border-color:transparent}
+.lt.pe{background:var(--green-soft);color:var(--green);border-color:transparent}
+.lt.liq{background:var(--orange-soft);color:var(--ink);border-color:transparent}
+.midtags{margin-top:2px;font-weight:400}
+.midtags .lt{font-size:9.5px}
+tr.atm td.k .lt{background:var(--surface);color:var(--ink)}
+.flag{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--orange);margin-left:5px;vertical-align:middle}
+.bu{display:inline-block;font:500 11px/1.4 var(--f-ui);padding:1px 7px;border-radius:999px;border:1px solid transparent}
+.bu.lb{background:var(--green-soft);color:var(--green)}
+.bu.sb{background:var(--red-soft);color:var(--red)}
+.bu.sc{border-color:var(--green);color:var(--green)}
+.bu.lu{border-color:var(--red);color:var(--red)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--muted)}
+.legend i{display:inline-block;width:14px;height:3px;vertical-align:middle;margin-right:5px;border-radius:2px}
+
+.read{display:flex;flex-direction:column;gap:0}
+.read h2{font-size:19px;font-weight:600;margin:0 0 4px}
+.read .lead{margin:0 0 10px;color:var(--muted);font-size:13px}
+.rrow{display:grid;grid-template-columns:170px minmax(0,1fr);gap:4px 16px;padding:10px 0;border-top:1px solid var(--line-2)}
+.rrow .rk{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding-top:3px}
+.rrow .rv{min-width:0}
+.rrow .rv p{margin:3px 0 0;font-size:13px;color:var(--muted);max-width:90ch}
+.read .eyebrow{margin:0 0 4px;font:600 11px/1.3 var(--f-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--green)}
+.rsec{font:600 12px/1.3 var(--f-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:16px 0 0;padding:8px 0 6px;border-bottom:2px solid var(--ink)}
+.rsec + .rrow{border-top:0}
+.term{border-bottom:1px dotted var(--muted);cursor:help;position:relative}
+.term .tip{display:none;position:absolute;left:0;top:calc(100% + 6px);z-index:5;width:min(300px,72vw);background:var(--ink);color:var(--surface);font:400 12.5px/1.45 var(--f-ui);padding:9px 11px;border-radius:6px;text-transform:none;letter-spacing:0;white-space:normal;box-shadow:0 6px 18px rgba(0,0,0,.18)}
+.term:hover .tip,.term:focus .tip,.term:focus-within .tip{display:block}
+.lvwrap{overflow-x:auto;margin:8px 0 2px;max-width:520px}
+table.lv{width:100%;border-collapse:collapse;font-size:12.5px}
+table.lv td,table.lv th{padding:4px 10px;border-bottom:1px solid var(--line-2);text-align:left;white-space:nowrap;font-family:var(--f-ui)}
+table.lv th{background:none;position:static;font-size:10.5px}
+table.lv td.r,table.lv th.r{text-align:right;font-family:var(--f-num)}
+table.lv tr.now td{background:var(--ink);color:var(--surface)}
+table.lv tr.now td.mut{color:var(--surface)}
+table.lv tr.ce td:first-child{color:var(--ce);font-weight:600} table.lv tr.pe td:first-child{color:var(--pe);font-weight:600}
+.rrow .rv p.means{color:var(--ink);font-size:13.5px;margin-top:6px}
+.rrow .rv p.means b{font-weight:600}
+.rtag{display:inline-block;font:600 12px/1.4 var(--f-ui);padding:1px 8px;border-radius:3px;margin-right:8px;background:var(--sunk);color:var(--ink);border:1px solid var(--line)}
+.rtag.up{background:var(--green-soft);color:var(--green);border-color:transparent}
+.rtag.dn{background:var(--red-soft);color:var(--red);border-color:transparent}
+.rtag.wa{background:var(--orange-soft);color:var(--ink);border-color:transparent}
+.rnum{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+.bands{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font-size:12.5px;color:var(--muted);margin-top:6px}
+.bands input{width:58px;border:1px solid var(--line);background:var(--sunk);border-radius:4px;padding:2px 6px;font-family:var(--f-num);font-size:12.5px}
+@media (max-width:640px){.rrow{grid-template-columns:1fr}}
+.qlist{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;font-size:13px}
+.qlist li::marker{color:var(--muted)}
+
+/* strategies */
+.filters{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.pill{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 12px;cursor:pointer;font-size:12.5px}
+.pill[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,268px),1fr));gap:12px;align-items:start}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.card .hd{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.card h3{font-size:16px;font-weight:600}
+.tag{font:500 10.5px/1 var(--f-ui);letter-spacing:.08em;text-transform:uppercase;padding:4px 7px;border-radius:3px;background:var(--sunk);color:var(--muted)}
+.tag.Bullish{color:var(--green)} .tag.Bearish{color:var(--red)} .tag.Volatile{color:var(--orange)}
+.legs{font:12px/1.5 var(--f-num);color:var(--muted)}
+.legs b{font-weight:600}
+.legs .B{color:var(--green)} .legs .S{color:var(--red)}
+.kv{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;font-size:12px}
+.kv div{display:flex;justify-content:space-between;gap:6px;border-bottom:1px dotted var(--line);padding-bottom:2px}
+.kv span:first-child{color:var(--muted)}
+.kv span:last-child{font-family:var(--f-num)}
+.spark{width:100%;height:46px;display:block}
+.card .btn{align-self:flex-start}
+.card.best{border:2px solid var(--green);padding-top:0;overflow:hidden}
+.bestbar{margin:0 -14px;padding:6px 14px;background:var(--green);color:#fff;font:600 11.5px/1.3 var(--f-ui);letter-spacing:.06em;text-transform:uppercase}
+.fit{font:600 12px/1 var(--f-num);color:var(--muted);border:1px solid var(--line);border-radius:3px;padding:4px 7px}
+details.why{font-size:12.5px;border-top:1px solid var(--line-2);padding-top:6px}
+details.why summary{cursor:pointer;color:var(--ink);font-weight:500}
+details.why ul{margin:6px 0 0;padding-left:16px;display:flex;flex-direction:column;gap:4px;color:var(--ink)}
+
+/* builder */
+.legtbl td{font-family:var(--f-ui)}
+.legtbl select,.legtbl input{border:1px solid var(--line);background:var(--sunk);border-radius:4px;padding:3px 6px;font-family:var(--f-num);font-size:12.5px}
+.legtbl input{width:84px}
+.sw{display:inline-flex;border:1px solid var(--line);border-radius:4px;overflow:hidden}
+.sw button{border:0;background:none;padding:3px 9px;cursor:pointer;font-weight:600;font-size:12px;color:var(--muted)}
+.sw button.on.B{background:var(--green);color:#fff} .sw button.on.S{background:var(--red);color:#fff}
+.chart{width:100%;height:auto;display:block}
+.wigrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 20px;align-items:end}
+@media (max-width:760px){.wigrid{grid-template-columns:1fr!important}}
+.wigrid input[type=range]{width:100%;accent-color:var(--green)}
+.wipair{display:flex;gap:8px;align-items:center}
+.wipair input[type=range]{flex:1 1 auto;min-width:0}
+.wipair input[type=number]{width:96px;flex:0 0 auto;border:1px solid var(--line);background:var(--sunk);border-radius:5px;padding:4px 6px;font-family:var(--f-num);font-size:13px;text-align:right}
+.pill[disabled]{opacity:.45;cursor:not-allowed}
+.wigrid .field label b{color:var(--ink);text-transform:none;letter-spacing:0;margin-left:4px}
+.wires{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px}
+.wires>div{flex:1 1 200px;border:1px solid var(--line);border-radius:8px;padding:10px 14px;display:flex;flex-direction:column;gap:2px}
+.wires .k{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.wires .v{font:600 22px/1.2 var(--f-num)}
+.wires .s{font-size:12px;color:var(--muted)}
+tr.atm0 td{background:var(--sunk);font-weight:600}
+.sizeout{font-size:14px}
+.upd{border-color:var(--green)}
+.mprice{width:96px;border:1px solid var(--green);background:var(--sunk);border-radius:4px;padding:3px 6px;font-family:var(--f-num);font-size:12.5px;text-align:right}
+.updrow{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:end;margin-top:10px}
+details.qa{border-bottom:1px solid var(--line-2)}
+details.qa summary{cursor:pointer;padding:9px 0;font-weight:500;list-style:none;display:flex;gap:10px;align-items:baseline}
+details.qa summary::-webkit-details-marker{display:none}
+details.qa summary::after{content:"+";margin-left:auto;color:var(--muted);font-family:var(--f-num)}
+details.qa[open] summary::after{content:"−"}
+.qn{font:600 11px/1 var(--f-num);color:var(--muted);min-width:20px}
+.qa-a{padding:0 0 10px 30px;font-size:13.5px;max-width:95ch}
+.qa-a p{margin:0 0 6px} .qa-a ul{margin:4px 0 0;padding-left:18px}
+.chart text{font-family:var(--f-num);font-size:11px;fill:var(--muted)}
+.chart .lbl{fill:var(--ink);font-weight:600}
+
+/* share */
+.share{display:grid;grid-template-columns:minmax(0,360px) minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:760px){.share{grid-template-columns:1fr}}
+.share canvas{width:100%;height:auto;border:1px solid var(--line);border-radius:6px;background:#fff}
+.disc{font-size:12.5px;color:var(--muted);border-left:3px solid var(--line);padding-left:12px;margin:0}
+.empty{display:flex;flex-direction:column;gap:12px;align-items:flex-start;padding:28px 22px;border:1.5px dashed var(--line);border-radius:10px;background:var(--surface)}
+.empty h2{font-size:20px}
+.empty p{margin:0;max-width:62ch;color:var(--muted)}
+.drop-on .empty,.drop-on .status{border-color:var(--green)}
+footer{font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding-top:12px;display:flex;flex-direction:column;gap:6px}
+footer p{margin:0;max-width:110ch}
+.toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--surface);padding:9px 16px;border-radius:6px;font-size:13px;z-index:9;max-width:calc(100% - 32px)}
+@media (prefers-reduced-motion:no-preference){.tabs button,.seg button,.pill{transition:background .15s,color .15s}}
+</style>
+</head>
+<body>
+
+
+<div class="wrap" id="app">
+  <header class="top">
+    <div class="brand"><span class="mark">STWP</span><h1>Chain Lab</h1></div>
+    <div class="seg" id="idxTabs" role="group" aria-label="Index"></div>
+    <div class="actions">
+      <label class="btn primary" for="fileIn">Upload CSV</label>
+      <input type="file" id="fileIn" accept=".csv,text/csv" multiple hidden>
+      <button class="btn" id="goShare" type="button">Share card</button>
+    </div>
+  </header>
+  <div id="bannerSlot"></div>
+  <section class="status" id="status" aria-label="Files and settings"></section>
+  <nav class="tabs" id="viewTabs" role="tablist"></nav>
+  <main id="view"></main>
+  <footer>
+    <p><b>Educational tool.</b> STWP Chain Lab computes analytics from the option-chain file you upload. It does not give buy, sell or hold recommendations, and nothing here is investment advice. Options carry a high risk of loss; as per SEBI, 9 out of 10 individual traders in equity F&amp;O incurred net losses.</p>
+    <p>Method: forward from put-call parity (median of the 5 strikes where call and put prices are closest), Black-76 with zero interest rate for IV and Greeks, lognormal distribution at ATM IV for Probability of Profit. Expiry is taken at 15:30 IST.</p>
+  </footer>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+/* ===== STWP Chain Lab engine: parsing, merge, Black-76, chain metrics, strategy math ===== */
+const ENG = (() => {
+  /* ---------- CSV ---------- */
+  function parseCSV(text) {
+    text = String(text).replace(/^﻿/, '');
+    const rows = []; let row = [], f = '', q = false;
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i];
+      if (q) {
+        if (c === '"') { if (text[i + 1] === '"') { f += '"'; i++; } else q = false; }
+        else f += c;
+      } else if (c === '"') q = true;
+      else if (c === ',') { row.push(f); f = ''; }
+      else if (c === '\n' || c === '\r') {
+        if (c === '\r' && text[i + 1] === '\n') i++;
+        row.push(f); f = '';
+        if (row.some(x => x.trim() !== '')) rows.push(row);
+        row = [];
+      } else f += c;
+    }
+    row.push(f); if (row.some(x => x.trim() !== '')) rows.push(row);
+    return rows;
+  }
+  const num = v => {
+    if (v == null) return null;
+    const s = String(v).replace(/,/g, '').trim();
+    if (s === '' || s === '-' || s === '--') return null;
+    const n = Number(s); return Number.isFinite(n) ? n : null;
+  };
+  const key = s => String(s).replace(/^﻿/, '').replace(/"/g, '').replace(/\s+/g, ' ').trim().toLowerCase();
+
+  function normBuild(s) {
+    if (!s) return null;
+    const t = s.toLowerCase();
+    if (t.includes('cov') || t.includes('cvr')) return 'Short covering';
+    if (t.includes('unw')) return 'Long unwinding';
+    if (t.includes('writ') || t.includes('short build')) return 'Short build-up';
+    if (t.includes('buy') || t.includes('long build')) return 'Long build-up';
+    return s.trim();
+  }
+
+  function detect(rows) {
+    const h = (rows[0] || []).map(key);
+    if (h.includes('strike_price') && h.includes('current_price_call')) return 'snake';
+    if (h.indexOf('strike') > 0 && h.includes('ltp') && h.includes('oi')) return 'mirror';
+    return null;
+  }
+
+  function parseMirror(rows) {
+    const h = rows[0].map(key), si = h.indexOf('strike');
+    const L = {}, R = {};
+    h.forEach((k, i) => { if (i < si) L[k] = i; else if (i > si) R[k] = i; });
+    const pick = (r, M) => {
+      const g = k => (M[k] != null ? num(r[M[k]]) : null);
+      const oi = g('oi'), chg = g('chg in oi');
+      return {
+        ltp: g('ltp'), oi, chgOi: chg, prevOi: oi != null && chg != null ? oi - chg : null,
+        chgOiPct: g('chg in oi percent'), vol: g('volume'), iv: g('iv'),
+        delta: g('delta'), gamma: g('gamma'), theta: g('theta'), vega: g('vega'),
+        open: g('open'), high: g('high'), low: g('low'),
+        build: M.builtup != null ? normBuild(r[M.builtup]) : null
+      };
+    };
+    const out = []; let dropped = 0;
+    for (const r of rows.slice(1)) {
+      const k = num(r[si]);
+      if (k == null) { dropped++; continue; }
+      out.push({ strike: k, ce: pick(r, L), pe: pick(r, R) });
+    }
+    return { rows: out, dropped };
+  }
+
+  function parseSnake(rows) {
+    const h = rows[0].map(key), M = {}; h.forEach((k, i) => M[k] = i);
+    const side = (r, s) => {
+      const g = k => (M[k + '_' + s] != null ? num(r[M[k + '_' + s]]) : null);
+      const oi = g('open_interest'), prev = g('prev_day_open_interest');
+      return {
+        ltp: g('current_price'), oi, prevOi: prev, chgOi: oi != null && prev != null ? oi - prev : null,
+        chgOiPct: g('oi_changep'), vol: g('volume'), iv: g('iv'),
+        delta: g('delta'), gamma: g('gamma'), theta: g('theta'), vega: g('vega'),
+        open: null, high: null, low: null,
+        build: M['built_up_' + s] != null ? normBuild(r[M['built_up_' + s]]) : null
+      };
+    };
+    const out = []; let dropped = 0;
+    for (const r of rows.slice(1)) {
+      const k = num(r[M.strike_price]);
+      if (k == null) { dropped++; continue; }
+      out.push({ strike: k, ce: side(r, 'call'), pe: side(r, 'put') });
+    }
+    return { rows: out, dropped };
+  }
+
+  function parseFile(text) {
+    const rows = parseCSV(text);
+    const fmt = detect(rows);
+    if (!fmt) return { error: 'Unrecognised columns. Upload the option-chain export exactly as downloaded, without editing the columns.' };
+    const p = fmt === 'snake' ? parseSnake(rows) : parseMirror(rows);
+    if (!p.rows.length) return { error: 'No strike rows found in this file.' };
+    return { fmt, ...p };
+  }
+
+  /* ---------- merge ---------- */
+  const SRC = { snake: 'Primary', mirror: 'Cross-check' };
+  function merge(files) {
+    const fmts = Object.keys(files);
+    const primary = files.snake ? 'snake' : 'mirror';
+    const second = fmts.find(f => f !== primary) || null;
+    const map = new Map();
+    const add = (fmt, r) => {
+      if (!map.has(r.strike)) map.set(r.strike, { strike: r.strike });
+      map.get(r.strike)[fmt] = r;
+    };
+    fmts.forEach(f => files[f].rows.forEach(r => add(f, r)));
+    const rows = []; let noQuote = 0;
+    for (const [k, o] of [...map.entries()].sort((a, b) => a[0] - b[0])) {
+      const P = o[primary], Q = second ? o[second] : null;
+      const row = { strike: k, src: [P ? SRC[primary] : null, Q ? SRC[second] : null].filter(Boolean), mismatch: {} };
+      for (const s of ['ce', 'pe']) {
+        const p = P ? P[s] : null, q = Q ? Q[s] : null;
+        const m = {};
+        const keys = new Set([...(p ? Object.keys(p) : []), ...(q ? Object.keys(q) : [])]);
+        keys.forEach(x => { m[x] = p && p[x] != null ? p[x] : (q ? q[x] ?? null : null); });
+        m.alt = p && q ? q : null;
+        if (p && q && p.ltp > 0 && q.ltp > 0 && p.oi > 0 && q.oi > 0) {
+          const dl = Math.abs(p.ltp - q.ltp) / p.ltp, dOiR = Math.abs(p.oi - q.oi) / p.oi;
+          if (dl > 0.02 || dOiR > 0.05) row.mismatch[s] = { dLtp: dl, dOi: dOiR };
+        }
+        row[s] = m;
+      }
+      if (!(row.ce.ltp > 0) && !(row.pe.ltp > 0)) { noQuote++; continue; }
+      rows.push(row);
+    }
+    return { rows, primary, second, noQuote };
+  }
+
+  /* ---------- Black-76 (r = 0, priced on the parity forward) ---------- */
+  const SQ2PI = 0.3989422804014327;
+  const npdf = x => SQ2PI * Math.exp(-x * x / 2);
+  function ncdf(x) {
+    const t = 1 / (1 + 0.2316419 * Math.abs(x));
+    const p = npdf(x) * t * (0.319381530 + t * (-0.356563782 + t * (1.781477937 + t * (-1.821255978 + t * 1.330274429))));
+    return x > 0 ? 1 - p : p;
+  }
+  function price(F, K, T, v, call) {
+    if (!(v > 0) || !(T > 0)) return Math.max(call ? F - K : K - F, 0);
+    const sq = v * Math.sqrt(T), d1 = (Math.log(F / K) + sq * sq / 2) / sq, d2 = d1 - sq;
+    return call ? F * ncdf(d1) - K * ncdf(d2) : K * ncdf(-d2) - F * ncdf(-d1);
+  }
+  function greeks(F, K, T, v, call) {
+    if (!(v > 0) || !(T > 0)) return null;
+    const rt = Math.sqrt(T), sq = v * rt, d1 = (Math.log(F / K) + sq * sq / 2) / sq, n = npdf(d1);
+    return {
+      delta: call ? ncdf(d1) : ncdf(d1) - 1,
+      gamma: n / (F * sq),
+      theta: -F * n * v / (2 * rt) / 365,
+      vega: F * n * rt / 100
+    };
+  }
+  function impliedVol(px, F, K, T, call) {
+    if (!(px > 0) || !(T > 0)) return null;
+    const intr = Math.max(call ? F - K : K - F, 0);
+    if (px <= intr + 0.05) return null;
+    if (px >= (call ? F : K)) return null;
+    let lo = 1e-4, hi = 5;
+    for (let i = 0; i < 100; i++) {
+      const mid = (lo + hi) / 2;
+      if (price(F, K, T, mid, call) > px) hi = mid; else lo = mid;
+    }
+    return (lo + hi) / 2;
+  }
+
+  /* ---------- chain model ---------- */
+  function model(merged, T) {
+    const rows = merged.rows;
+    const both = rows.filter(r => r.ce.ltp > 0 && r.pe.ltp > 0);
+    if (!both.length) return { error: 'Need call and put prices on at least one strike to derive the forward.' };
+    if (!(T > 0)) return { error: 'Expiry must be after the data time.' };
+    const near = [...both].sort((a, b) => Math.abs(a.ce.ltp - a.pe.ltp) - Math.abs(b.ce.ltp - b.pe.ltp)).slice(0, 5);
+    const fs = near.map(r => r.strike + r.ce.ltp - r.pe.ltp).sort((a, b) => a - b);
+    const F = fs.length % 2 ? fs[(fs.length - 1) / 2] : (fs[fs.length / 2 - 1] + fs[fs.length / 2]) / 2;
+    const Fspread = fs[fs.length - 1] - fs[0];
+    const ks = rows.map(r => r.strike);
+    let step = Infinity; for (let i = 1; i < ks.length; i++) step = Math.min(step, ks[i] - ks[i - 1]);
+    let unsolved = 0;
+    for (const r of rows) {
+      for (const s of ['ce', 'pe']) {
+        const o = r[s], call = s === 'ce';
+        o.eiv = o.ltp > 0 ? impliedVol(o.ltp, F, r.strike, T, call) : null;
+        if (o.ltp > 0 && o.eiv == null) unsolved++;
+        o.eg = o.eiv ? greeks(F, r.strike, T, o.eiv, call) : null;
+      }
+    }
+    const atmRow = both.reduce((a, b) => Math.abs(b.strike - F) < Math.abs(a.strike - F) ? b : a);
+    const ivs = [atmRow.ce.eiv, atmRow.pe.eiv].filter(x => x > 0);
+    const atmIV = ivs.length ? ivs.reduce((a, b) => a + b) / ivs.length : null;
+    const sigmaMove = atmIV ? F * atmIV * Math.sqrt(T) : null;
+    const straddle = atmRow.ce.ltp + atmRow.pe.ltp;
+    const sum = (s, f) => rows.reduce((a, r) => a + (r[s][f] || 0), 0);
+    const ceOi = sum('ce', 'oi'), peOi = sum('pe', 'oi'), ceVol = sum('ce', 'vol'), peVol = sum('pe', 'vol');
+    const maxBy = (s, f) => rows.reduce((a, b) => (b[s][f] || 0) > (a[s][f] || 0) ? b : a);
+    const top3 = s => [...rows].filter(r => r[s].oi > 0).sort((x, y) => y[s].oi - x[s].oi).slice(0, 3).map(r => r.strike);
+    const zone = ks => ks.length ? { ks, lo: Math.min(...ks), hi: Math.max(...ks) } : null;
+    let maxPain = null, minPain = Infinity;
+    for (const c of rows) {
+      let pain = 0;
+      for (const r of rows) pain += (r.ce.oi || 0) * Math.max(c.strike - r.strike, 0) + (r.pe.oi || 0) * Math.max(r.strike - c.strike, 0);
+      if (pain < minPain) { minPain = pain; maxPain = c.strike; }
+    }
+    const nearest = (x, s) => {
+      const c = rows.filter(r => r[s].eiv > 0);
+      return c.length ? c.reduce((a, b) => Math.abs(b.strike - x) < Math.abs(a.strike - x) ? b : a) : null;
+    };
+    let skew = null, skewP = null, skewC = null;
+    if (sigmaMove) {
+      skewP = nearest(F - sigmaMove, 'pe'); skewC = nearest(F + sigmaMove, 'ce');
+      if (skewP && skewC) skew = (skewP.pe.eiv - skewC.ce.eiv) * 100;
+    }
+    const provGap = atmRow.ce.iv != null && atmRow.pe.iv != null ? atmRow.ce.iv - atmRow.pe.iv : null;
+    const engGap = atmRow.ce.eiv && atmRow.pe.eiv ? (atmRow.ce.eiv - atmRow.pe.eiv) * 100 : null;
+    const mism = rows.filter(r => r.mismatch.ce || r.mismatch.pe);
+    return {
+      rows, F, Fspread, Fn: fs.length, T, step, atm: atmRow.strike, atmRow, atmIV, sigmaMove, straddle,
+      pcrOi: ceOi ? peOi / ceOi : null, pcrVol: ceVol ? peVol / ceVol : null, ceOi, peOi,
+      maxPain, callWall: maxBy('ce', 'oi').strike, putWall: maxBy('pe', 'oi').strike,
+      callZone: zone(top3('ce')), putZone: zone(top3('pe')),
+      callAdd: maxBy('ce', 'chgOi').strike, putAdd: maxBy('pe', 'chgOi').strike,
+      skew, skewP: skewP && skewP.strike, skewC: skewC && skewC.strike, provGap, engGap,
+      kmin: ks[0], kmax: ks[ks.length - 1], n: rows.length, unsolved, mism
+    };
+  }
+
+  /* ---------- strategy math (all per-unit × qty) ---------- */
+  function strat(legs, m, lot) {
+    const F = m.F, T = m.T, sig = m.atmIV;
+    const L = legs.filter(l => l.K > 0 && l.lots > 0 && l.prem >= 0).map(l => ({ ...l, q: l.lots * lot, sg: l.side === 'B' ? 1 : -1, call: l.type === 'CE' }));
+    if (!L.length) return null;
+    const pay = S => L.reduce((a, l) => a + l.sg * l.q * (Math.max(l.call ? S - l.K : l.K - S, 0) - l.prem), 0);
+    const now = S => L.reduce((a, l) => a + l.sg * l.q * (price(S, l.K, T, l.iv || sig, l.call) - l.prem), 0);
+    const ks = [...new Set(L.map(l => l.K))].sort((a, b) => a - b);
+    const kmax = ks[ks.length - 1];
+    const pts = [0, ...ks];
+    const vals = pts.map(pay);
+    const vR = pay(kmax), slopeR = (pay(kmax + 1000) - vR) / 1000;
+    const maxProfit = slopeR > 1e-9 ? Infinity : Math.max(...vals);
+    const maxLoss = slopeR < -1e-9 ? -Infinity : Math.min(...vals);
+    const bes = [];
+    for (let i = 0; i < pts.length - 1; i++) {
+      const a = pts[i], b = pts[i + 1], va = vals[i], vb = vals[i + 1];
+      if (va === 0 && i > 0) bes.push(a);
+      else if (va * vb < 0) bes.push(a + (b - a) * (-va) / (vb - va));
+    }
+    if (vR === 0 && !bes.includes(kmax)) bes.push(kmax);
+    if (vR * slopeR < 0) bes.push(kmax - vR / slopeR);
+    const be = [...new Set(bes.map(x => Math.round(x * 100) / 100))].sort((a, b) => a - b);
+    const cdf = x => x <= 0 ? 0 : !isFinite(x) ? 1 : ncdf((Math.log(x / F) + sig * sig * T / 2) / (sig * Math.sqrt(T)));
+    let pop = null;
+    if (sig) {
+      pop = 0; const bnd = [0, ...be, Infinity];
+      for (let i = 0; i < bnd.length - 1; i++) {
+        const a = bnd[i], b = bnd[i + 1];
+        const mid = !isFinite(b) ? (a ? a * 1.05 + 1 : F) : (a + b) / 2;
+        if (pay(mid) > 1e-9) pop += cdf(b) - cdf(a);
+      }
+    }
+    const net = L.reduce((a, l) => a - l.sg * l.q * l.prem, 0);
+    const g = { delta: 0, gamma: 0, theta: 0, vega: 0 };
+    L.forEach(l => {
+      const x = greeks(F, l.K, T, l.iv || sig, l.call);
+      if (x) for (const k in g) g[k] += l.sg * l.q * x[k];
+    });
+    const rr = isFinite(maxProfit) && isFinite(maxLoss) && maxLoss < 0 ? maxProfit / -maxLoss : null;
+    return { pay, now, net, maxProfit, maxLoss, be, pop, g, rr, ks, legs: L };
+  }
+
+  /* ---------- prebuilt strategies (positioned by ATM and the 1σ move) ---------- */
+  function templates(m, w) {
+    const rows = m.rows, step = m.step, F = m.F, sm = m.sigmaMove || step * 3;
+    const has = (K, s) => { const r = rows.find(x => x.strike === K); return r && r[s].ltp > 0 ? r : null; };
+    const near = (x, s) => {
+      const c = rows.filter(r => r[s].ltp > 0);
+      return c.reduce((a, b) => Math.abs(b.strike - x) < Math.abs(a.strike - x) ? b : a).strike;
+    };
+    const A = m.atm;
+    const leg = (side, type, K, lots = 1) => ({ side, type, K, lots });
+    const T = [
+      ['Bullish', 'Long Call', [leg('B', 'CE', A)]],
+      ['Bullish', 'Bull Call Spread', [leg('B', 'CE', A), leg('S', 'CE', A + w * step)]],
+      ['Bullish', 'Bull Put Spread', [leg('S', 'PE', A), leg('B', 'PE', A - w * step)]],
+      ['Bullish', 'Call Ratio Backspread', [leg('S', 'CE', A), leg('B', 'CE', A + w * step, 2)]],
+      ['Bullish', 'Bear Call Ladder', [leg('S', 'CE', A), leg('B', 'CE', A + w * step), leg('B', 'CE', A + 2 * w * step)]],
+      ['Bearish', 'Long Put', [leg('B', 'PE', A)]],
+      ['Bearish', 'Bear Put Spread', [leg('B', 'PE', A), leg('S', 'PE', A - w * step)]],
+      ['Bearish', 'Bear Call Spread', [leg('S', 'CE', A), leg('B', 'CE', A + w * step)]],
+      ['Bearish', 'Put Ratio Backspread', [leg('S', 'PE', A), leg('B', 'PE', A - w * step, 2)]],
+      ['Bearish', 'Bull Put Ladder', [leg('S', 'PE', A), leg('B', 'PE', A - w * step), leg('B', 'PE', A - 2 * w * step)]],
+      ['Neutral', 'Iron Condor', (() => { const p = Math.max(near(F - sm, 'pe'), m.kmin + w * step), c = Math.min(near(F + sm, 'ce'), m.kmax - w * step); return [leg('B', 'PE', p - w * step), leg('S', 'PE', p), leg('S', 'CE', c), leg('B', 'CE', c + w * step)]; })()],
+      ['Neutral', 'Iron Butterfly', [leg('B', 'PE', A - w * step), leg('S', 'PE', A), leg('S', 'CE', A), leg('B', 'CE', A + w * step)]],
+      ['Neutral', 'Short Strangle', [leg('S', 'PE', near(F - sm, 'pe')), leg('S', 'CE', near(F + sm, 'ce'))]],
+      ['Neutral', 'Jade Lizard', [leg('S', 'PE', A - w * step), leg('S', 'CE', A + w * step), leg('B', 'CE', A + 2 * w * step)]],
+      ['Volatile', 'Long Straddle', [leg('B', 'CE', A), leg('B', 'PE', A)]],
+      ['Volatile', 'Long Strangle', (() => { const d = Math.max(step, Math.round(sm / 2 / step) * step); return [leg('B', 'PE', A - d), leg('B', 'CE', A + d)]; })()]
+      ,['Volatile', 'Reverse Condor', [leg('S', 'PE', A - 2 * w * step), leg('B', 'PE', A - w * step), leg('B', 'CE', A + w * step), leg('S', 'CE', A + 2 * w * step)]]
+    ];
+    return T.map(([view, name, legs]) => {
+      const missing = legs.filter(l => !has(l.K, l.type === 'CE' ? 'ce' : 'pe')).map(l => l.K + ' ' + l.type);
+      return { view, name, legs, missing };
+    });
+  }
+
+  return { parseCSV, parseFile, merge, model, strat, templates, price, greeks, impliedVol, ncdf };
+})();
+
+
+const SAMPLE_A = "\ufeff\"built_up_call\",\"vega_call\",\"theta_call\",\"rho_call\",\"gamma_call\",\"delta_call\",\"iv_call\",\"oi_changeP_call\",\"prev_day_open_interest_call\",\"open_interest_call\",\"ttv_call\",\"volume_changeP_call\",\"volume_call\",\"day_changeP_call\",\"current_price_call\",\"pcr_oi_p\",\"pcr_oi\",\"pcr_oi_prev\",\"pcr_oi_change\",\"strike_price\",\"pcr_volume_change\",\"pcr_volume_prev\",\"pcr_volume\",\"pcr_volume_p\",\"current_price_put\",\"day_changeP_put\",\"volume_put\",\"volume_changeP_put\",\"ttv_put\",\"open_interest_put\",\"prev_day_open_interest_put\",\"oi_changeP_put\",\"iv_put\",\"delta_put\",\"gamma_put\",\"rho_put\",\"theta_put\",\"vega_put\",\"built_up_put\"\n\"Short Covering\",\"0\",\"0\",\"3.8484\",\"0\",\"1\",\"-\",\"-23.55\",\"80860\",\"61815\",\"3333217930.25\",\"-74.31\",\"146510\",\"30.99\",\"434.3\",\"151.0938\",\"11.0652\",\"4.4068\",\"6.6584\",\"22350\",\"21.3759\",\"4.5584\",\"25.9343\",\"468.9343\",\"39\",\"-64.75\",\"3799640\",\"46.14\",\"85134926425.25\",\"683995\",\"356330\",\"91.96\",\"15.476811518459671\",\"-0.1589\",\"0.0005\",\"-0.6307\",\"-9.4365\",\"7.2441\",\"Short Build Up\"\n\"Short Covering\",\"0\",\"0\",\"3.857\",\"0\",\"1\",\"-\",\"-18.38\",\"694980\",\"567255\",\"34942163701.25\",\"-50\",\"1535105\",\"32\",\"391.9\",\"99.9825\",\"4.5688\",\"2.2846\",\"2.2842\",\"22400\",\"4.7316\",\"3.2532\",\"7.9848\",\"145.4445\",\"46.75\",\"-62.78\",\"12257505\",\"22.73\",\"275379171509\",\"2591680\",\"1587755\",\"63.23\",\"15.334698664106517\",\"-0.1849\",\"0.0006\",\"-0.7339\",\"-10.2408\",\"7.9788\",\"Short Build Up\"\n\"Short Covering\",\"0\",\"0\",\"3.8656\",\"0\",\"1\",\"-\",\"-43.11\",\"148200\",\"84305\",\"14086835165\",\"-70.79\",\"618605\",\"32.92\",\"352.1\",\"674.1757\",\"21.2968\",\"2.7509\",\"18.5459\",\"22450\",\"8.257\",\"2.1881\",\"10.4451\",\"377.3594\",\"55.4\",\"-61.38\",\"6461390\",\"39.44\",\"145521925071.25\",\"1795430\",\"407680\",\"340.4\",\"15.14810726159443\",\"-0.2131\",\"0.0006\",\"-0.8463\",\"-10.961\",\"8.6931\",\"Short Build Up\"\n\"Short Covering\",\"4.7346\",\"-3.3216\",\"3.5311\",\"0.0007\",\"0.913\",\"7.535830332387496\",\"-3.29\",\"1381185\",\"1335685\",\"184969680655.5\",\"-35.14\",\"8115705\",\"34.55\",\"312.3\",\"141.5501\",\"3.3503\",\"1.387\",\"1.9633\",\"22500\",\"1.1816\",\"1.3826\",\"2.5642\",\"85.4622\",\"66.15\",\"-59.14\",\"20810595\",\"20.29\",\"470059543414.5\",\"4474990\",\"1915745\",\"133.59\",\"15.038637350927347\",\"-0.2455\",\"0.0007\",\"-0.9754\",\"-11.7083\",\"9.4117\",\"Short Build Up\"\n\"Short Covering\",\"7.2537\",\"-5.4755\",\"3.2538\",\"0.0009\",\"0.8408\",\"8.586783452445063\",\"-29.98\",\"450125\",\"315185\",\"64161323606.25\",\"-43.26\",\"2813980\",\"34.62\",\"274.9\",\"320.2266\",\"2.9668\",\"0.706\",\"2.2608\",\"22550\",\"1.1111\",\"0.9966\",\"2.1077\",\"111.4891\",\"79.8\",\"-55.92\",\"5931120\",\"20\",\"134383603246.75\",\"935090\",\"317785\",\"194.25\",\"15.054361071127689\",\"-0.2824\",\"0.0008\",\"-1.1227\",\"-12.5014\",\"10.1086\",\"Short Build Up\"\n\"Short Covering\",\"9.0334\",\"-7.1029\",\"2.9904\",\"0.0011\",\"0.7721\",\"9.232979004042953\",\"-0.41\",\"1975155\",\"1966965\",\"392628983753.5\",\"23.83\",\"17201015\",\"35.85\",\"240.05\",\"139.0204\",\"2.03\",\"0.8493\",\"1.1807\",\"22600\",\"0.4888\",\"1.0072\",\"1.496\",\"48.5306\",\"94.9\",\"-53.76\",\"25733500\",\"83.93\",\"584702699311.25\",\"3993015\",\"1677455\",\"138.04\",\"15.024914900524724\",\"-0.3212\",\"0.0008\",\"-1.2774\",\"-13.1309\",\"10.7104\",\"Short Build Up\"\n\"Long Build Up\",\"10.338\",\"-8.3722\",\"2.7275\",\"0.0012\",\"0.7038\",\"9.732810963349067\",\"31.54\",\"434070\",\"570960\",\"191106364865\",\"127.88\",\"8364200\",\"35.8\",\"208.25\",\"276.4918\",\"1.9875\",\"0.5279\",\"1.4596\",\"22650\",\"0.6895\",\"0.5909\",\"1.2804\",\"116.6864\",\"111.7\",\"-51.39\",\"10709400\",\"393.81\",\"244053058028\",\"1134770\",\"229125\",\"395.26\",\"14.969630076568862\",\"-0.3618\",\"0.0008\",\"-1.4398\",\"-13.5976\",\"11.207\",\"Short Build Up\"\n\"Long Build Up\",\"11.2099\",\"-9.1737\",\"2.4742\",\"0.0013\",\"0.6379\",\"10.012716220841888\",\"95.03\",\"2395185\",\"4671225\",\"648029812127.75\",\"114.12\",\"28328885\",\"36.87\",\"178\",\"79.3555\",\"1.0964\",\"0.6113\",\"0.4851\",\"22700\",\"0.4188\",\"0.6044\",\"1.0232\",\"69.2919\",\"132.3\",\"-49.11\",\"28985190\",\"262.45\",\"662380951427\",\"5121415\",\"1464190\",\"249.78\",\"15.0640210330327\",\"-0.4051\",\"0.0009\",\"-1.6135\",\"-14.0533\",\"11.5913\",\"Short Build Up\"\n\"Long Build Up\",\"11.7364\",\"-9.7065\",\"2.2193\",\"0.0013\",\"0.5718\",\"10.282148127421781\",\"254.3\",\"461500\",\"1635075\",\"228247296901\",\"220.32\",\"9966905\",\"35.74\",\"151.15\",\"55.6465\",\"0.6657\",\"0.4277\",\"0.238\",\"22750\",\"0.29\",\"0.3763\",\"0.6663\",\"77.0662\",\"154.05\",\"-46.8\",\"6641115\",\"467.14\",\"152218825274.75\",\"1088490\",\"197405\",\"451.4\",\"15.067816250772154\",\"-0.4487\",\"0.0009\",\"-1.7885\",\"-14.2513\",\"11.8317\",\"Short Build Up\"\n\"Long Build Up\",\"11.9283\",\"-9.8252\",\"1.9704\",\"0.0013\",\"0.5073\",\"10.389774340902376\",\"87.61\",\"2212990\",\"4151810\",\"463864257736.75\",\"66.15\",\"20234110\",\"35.36\",\"125.75\",\"30.7891\",\"0.5072\",\"0.3878\",\"0.1194\",\"22800\",\"0.2299\",\"0.2767\",\"0.5066\",\"83.0864\",\"179\",\"-44.13\",\"10250955\",\"204.2\",\"235775106745.75\",\"2106000\",\"858130\",\"145.42\",\"15.155515059511334\",\"-0.4929\",\"0.0009\",\"-1.9661\",\"-14.3541\",\"11.9284\",\"Short Build Up\"\n\"Long Build Up\",\"11.8146\",\"-9.7574\",\"1.7272\",\"0.0013\",\"0.4445\",\"10.560569435392681\",\"39.1\",\"796445\",\"1107860\",\"151627838063\",\"65.55\",\"6605950\",\"32.7\",\"104.3\",\"-0.7892\",\"0.264\",\"0.2661\",\"-0.0021\",\"22850\",\"0.1424\",\"0.0626\",\"0.205\",\"227.476\",\"207.1\",\"-42.57\",\"1354275\",\"442.58\",\"31252334951.5\",\"292500\",\"211900\",\"38.04\",\"15.323377264451112\",\"-0.5362\",\"0.0009\",\"-2.1413\",\"-14.3618\",\"11.8811\",\"Short Build Up\"\n\"Long Build Up\",\"11.4206\",\"-9.3596\",\"1.4924\",\"0.0012\",\"0.3838\",\"10.620680635493109\",\"52.84\",\"1845480\",\"2820610\",\"368318611235.25\",\"75.74\",\"16024840\",\"31.78\",\"84.6\",\"92.2544\",\"0.3053\",\"0.1588\",\"0.1465\",\"22900\",\"0.0668\",\"0.0953\",\"0.1621\",\"70.0944\",\"237.3\",\"-38.8\",\"2598310\",\"198.98\",\"60179136312.75\",\"861120\",\"293085\",\"193.81\",\"15.49015447827018\",\"-0.5782\",\"0.0008\",\"-2.3111\",\"-14.209\",\"11.7005\",\"Short Build Up\"\n\"Long Build Up\",\"10.7896\",\"-8.7975\",\"1.2721\",\"0.0011\",\"0.327\",\"10.703425816717187\",\"90.01\",\"451555\",\"858000\",\"129616111433.25\",\"119.43\",\"5631145\",\"28.76\",\"68.05\",\"209.4915\",\"0.2739\",\"0.0885\",\"0.1854\",\"22950\",\"0.0699\",\"0.0396\",\"0.1095\",\"176.5152\",\"268.1\",\"-37.32\",\"616395\",\"506.33\",\"14325840486.75\",\"234975\",\"39975\",\"487.8\",\"15.533582192901967\",\"-0.6193\",\"0.0008\",\"-2.4778\",\"-13.7881\",\"11.3931\",\"Short Build Up\"\n\"Long Build Up\",\"9.9692\",\"-8.0776\",\"1.0685\",\"0.001\",\"0.2745\",\"10.771127870830533\",\"39.3\",\"3958695\",\"5514600\",\"657350078092.5\",\"58.06\",\"28512965\",\"24.42\",\"54\",\"8.8736\",\"0.2687\",\"0.2468\",\"0.0219\",\"23000\",\"-0.0157\",\"0.1207\",\"0.105\",\"-13.0075\",\"304.6\",\"-34.72\",\"2993120\",\"37.45\",\"69847455723.5\",\"1481935\",\"977015\",\"51.68\",\"15.914858373183785\",\"-0.6554\",\"0.0008\",\"-2.626\",\"-13.5868\",\"11.0133\",\"Short Build Up\"\n\"Long Build Up\",\"9.0205\",\"-7.2684\",\"0.8852\",\"0.0009\",\"0.2273\",\"10.842959536248621\",\"99.31\",\"360490\",\"718510\",\"113861104649.5\",\"101.39\",\"4930575\",\"19.27\",\"42.4\",\"-6.8359\",\"0.0954\",\"0.1024\",\"-0.007\",\"23050\",\"0.0039\",\"0.0277\",\"0.0316\",\"14.0794\",\"343.7\",\"-33.33\",\"155675\",\"129.85\",\"3646335592.25\",\"68575\",\"36920\",\"85.74\",\"16.39390764321565\",\"-0.6874\",\"0.0007\",\"-2.7584\",\"-13.3994\",\"10.5884\",\"Short Build Up\"\n\"Long Build Up\",\"7.9874\",\"-6.3875\",\"0.7215\",\"0.0008\",\"0.1852\",\"10.892881966574432\",\"141.4\",\"1705925\",\"4118075\",\"316498969702.5\",\"90.34\",\"13681525\",\"14.31\",\"32.75\",\"-12.4733\",\"0.0821\",\"0.0938\",\"-0.0117\",\"23100\",\"0.0088\",\"0.0261\",\"0.0349\",\"33.7165\",\"383.1\",\"-30.6\",\"477100\",\"154.6\",\"11214187084.75\",\"338260\",\"159965\",\"111.46\",\"16.773947239071514\",\"-0.7175\",\"0.0007\",\"-2.8832\",\"-13.0381\",\"10.1105\",\"Short Build Up\"\n\"Long Build Up\",\"6.9777\",\"-5.5791\",\"0.5852\",\"0.0007\",\"0.1502\",\"11.009451301117549\",\"31.41\",\"606385\",\"796835\",\"99973261537.5\",\"63.57\",\"4313660\",\"8.99\",\"25.45\",\"6.4103\",\"0.0249\",\"0.0234\",\"0.0015\",\"23150\",\"0.0014\",\"0.0051\",\"0.0065\",\"27.451\",\"425.95\",\"-29.95\",\"28015\",\"110.24\",\"661041979\",\"19825\",\"14170\",\"39.91\",\"17.383898599133623\",\"-0.7419\",\"0.0006\",\"-2.9864\",\"-12.8809\",\"9.6641\",\"Short Build Up\"\n\"Long Build Up\",\"5.9594\",\"-4.738\",\"0.4653\",\"0.0006\",\"0.1194\",\"11.071729744001289\",\"87.3\",\"2151890\",\"4030520\",\"355354997188.75\",\"90.65\",\"15303730\",\"0.52\",\"19.3\",\"-30.144\",\"0.0679\",\"0.0972\",\"-0.0293\",\"23200\",\"-0.0006\",\"0.0185\",\"0.0179\",\"-3.2432\",\"470.2\",\"-27.04\",\"273455\",\"83.71\",\"6481112173.25\",\"273650\",\"209170\",\"30.83\",\"18.05102878164105\",\"-0.7628\",\"0.0006\",\"-3.0761\",\"-12.7593\",\"9.2375\",\"Short Build Up\"\n\"Short Build Up\",\"5.0894\",\"-4.0749\",\"0.3739\",\"0.0005\",\"0.0959\",\"11.24790661685331\",\"47.63\",\"666250\",\"983580\",\"94236080006.25\",\"65.32\",\"4050475\",\"-5.35\",\"15.05\",\"1000\",\"0.1507\",\"0.0137\",\"0.137\",\"23250\",\"0.0472\",\"0.0021\",\"0.0493\",\"2247.619\",\"510.35\",\"-26.04\",\"199680\",\"3788.61\",\"4747234206\",\"148265\",\"9100\",\"1529.29\",\"18.16921428556762\",\"-0.7884\",\"0.0005\",\"-3.1835\",\"-11.9886\",\"8.6582\",\"Short Build Up\"\n\"Short Build Up\",\"4.2572\",\"-3.4122\",\"0.2947\",\"0.0004\",\"0.0756\",\"11.365689424548666\",\"64.13\",\"1829880\",\"3003455\",\"237068825188\",\"71.6\",\"10169380\",\"-14.55\",\"11.45\",\"-6.1594\",\"0.0777\",\"0.0828\",\"-0.0051\",\"23300\",\"-0.0093\",\"0.0244\",\"0.0151\",\"-38.1148\",\"563\",\"-24.2\",\"153595\",\"6.2\",\"3668397326.75\",\"233415\",\"151515\",\"54.05\",\"19.657345987692832\",\"-0.7943\",\"0.0005\",\"-3.2159\",\"-12.7833\",\"8.5138\",\"Short Build Up\"";
+const SAMPLE_B = "Gamma,Vega,Theta ,Delta,BuiltUp,Volume,OI in Value,OI,Chg in OI,Chg in OI Percent,IV,Open,Low,High,LTP,LTP Percent,Strike,LTP,LTP  Percent,High,Low,Open,IV,Chg in OI,Chg in OI Percent,OI,OI in Value,Volume,BuiltUp,Delta,Theta ,Vega,Gamma\n0.0007,3.49,-7.16,0.95,Call Short Cvr.,2813980,95733137.5,350350,-99775,-22.17,5.38,206.7,201.5,312.35,273.25,33.81,22550,78.95,-56.39,184.3,72.85,184.25,14.62,631475,198.71,949260,74944077,5931120,Put Writing,-0.28,-9.26,10.53,0.0007\n0.0011,7.91,-9.24,0.83,Call Short Cvr.,17201015,473709600,1973790,-1365,-0.07,7.29,189.3,174,276.75,240.00,35.82,22600,91.90,-55.23,187.1,87.3,180,14.44,2396420,142.86,4073875,374389112.5,25733500,Put Writing,-0.31,-9.52,11.14,0.0008\n0.0013,9.99,-10.34,0.75,Call Buying,8364200,119480400,577200,143130,32.97,8,210.2,149.2,244,207.00,34.99,22650,108.80,-52.65,212.4,103.05,199.75,14.44,905775,395.32,1134900,123477120,10709400,Put Writing,-0.35,-9.84,11.69,0.0008\n0.0013,11.36,-11.08,0.67,Call Buying,28328885,835964181,4714970,2319785,96.85,8.53,174,126.2,210,177.30,36.33,22700,130.80,-49.68,255.45,122.75,255.4,14.7,3751800,256.24,5215990,682251492,28985190,Put Writing,-0.39,-10.25,12.14,0.0008\n0.0014,12.18,-11.42,0.6,Call Buying,9966905,244902973.25,1636505,1175005,254.61,8.86,119.9,106.05,180.9,149.65,34.4,22750,153.75,-46.9,318.55,142.85,318.55,14.85,890305,451,1087710,167235412.5,6641115,Put Writing,-0.44,-10.41,12.43,0.0008\n0.0014,12.55,-11.36,0.53,Call Buying,20234110,514047456,4158960,1945970,87.93,9.02,99,88.15,153.2,123.60,33.05,22800,177.70,-44.54,299.4,168.55,278.05,14.9,1250600,145.74,2108730,374721321,10250955,Put Writing,-0.48,-10.34,12.57,0.0008\n0.0014,12.53,-11.12,0.46,Call Buying,6605950,112908900,1106950,310505,38.99,9.25,86.5,73.05,128.9,102.00,29.77,22850,205.60,-42.98,334.55,194.85,297.4,15.1,80535,38.01,292435,60124636,1354275,Put Writing,-0.52,-10.25,12.57,0.0008\n0.0013,12.16,-10.65,0.4,Call Buying,16024840,234782912,2821910,976430,52.91,9.44,61.8,59.1,106.4,83.20,29.6,22900,236.00,-39.14,369.1,225,354.5,15.34,579540,197.74,872625,205939500,2598310,Put Writing,-0.56,-10.05,12.43,0.0008\n0.0012,11.5,-9.88,0.34,Call Buying,5631145,57139153.5,864435,412880,91.44,9.51,54.95,47.95,87.3,66.10,25.07,22950,269.50,-37,401,258.05,392.15,15.67,197470,493.98,237445,63991427.5,616395,Put Writing,-0.6,-9.84,12.19,0.0008\n0.0011,10.65,-9.12,0.28,Call Buying,28512965,303935638.5,5723835,1765140,44.59,9.7,45,38.75,70.5,53.10,22.35,23000,306.30,-34.35,448.85,292.5,448,16.14,504985,51.69,1482000,453936600,2993120,Put Writing,-0.63,-9.65,11.87,0.0007\n0.001,9.63,-8.18,0.23,Call Buying,4930575,29741296,714935,354445,98.32,9.81,36.6,31.15,56.65,41.60,17.02,23050,346.30,-32.82,488.05,329.7,486.45,16.76,31655,85.74,68575,23747522.5,155675,Put Writing,-0.66,-9.55,11.52,0.0007\n,,,,,66674985,1769790291.75,9252815,3536780,,,,,,,,ITM Total,,,,,,,2644785,,5061810,1182461007,17968730,,,,,\n,,,,,81939585,1252555356,15391025,5765370,,,,,,,,OTM Total,,,,,,,8575775,,12461735,1422297214,78000325,,,,,\n,,,,,148614570,3022345647.75,24643840,9302150,,,,,,,,Total,,,,,,,11220560,,17523545,2604758221,95969055,,,,,";
+</script>
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const LOTS = {NIFTY:65, BANKNIFTY:30, SENSEX:20};
+const IDX = Object.keys(LOTS);
+const roleOf = (files, f) => f === 'snake' || !files.snake ? 'Primary file' : 'Cross-check file';
+const pad = n => String(n).padStart(2,'0');
+const localDT = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+const store = { get(k){ try{ return JSON.parse(localStorage.getItem('stwpcl.'+k)); }catch(e){ return null; } }, set(k,v){ try{ localStorage.setItem('stwpcl.'+k, JSON.stringify(v)); }catch(e){} } };
+const savedLots = store.get('lots') || {};
+
+const now = new Date();
+const S = { idx:'NIFTY', view: store.get('view') || 'chain', filter: store.get('pickview') || 'Chain lean', width:2, cmp:null, data:{} };
+IDX.forEach(i => S.data[i] = { files:{}, sample:false, asof: localDT(now), expiry:'', lot: savedLots[i] || LOTS[i], legs:null, m:null, err:null });
+// Example data so the tool opens in a working state
+(() => {
+  const d = S.data.NIFTY;
+  const fa = ENG.parseFile(SAMPLE_A), fb = ENG.parseFile(SAMPLE_B);
+  d.files.snake = { name:'chain-a.csv', ...fa }; d.files.mirror = { name:'chain-b.csv', ...fb };
+  d.sample = true; d.asof = localDT(new Date()); d.expiry = '2026-10-13';
+})();
+
+/* ---------- format ---------- */
+const nf = (n, d=0) => n == null || !isFinite(n) ? '–' : (Math.abs(n) < 0.5 * Math.pow(10, -d) ? 0 : n).toLocaleString('en-IN', {minimumFractionDigits:d, maximumFractionDigits:d});
+const lakh = n => n == null ? '–' : Math.abs(n) >= 1e7 ? nf(n/1e7,2)+' Cr' : Math.abs(n) >= 1e5 ? nf(n/1e5,2)+' L' : nf(n);
+const sgn = (n, f) => n == null ? '–' : (n > 0 ? '+' : '') + f(n);
+const rupee = n => (n = (n != null && isFinite(n) && Math.abs(n) < 0.5) ? 0 : n, n === Infinity ? 'Unlimited' : n === -Infinity ? 'Unlimited' : n == null ? '–' : (n < 0 ? '−₹' : '₹') + nf(Math.abs(n)));
+const pctv = (v, d=1) => v == null ? '–' : nf(v*100, d) + '%';
+const zoneTxt = z => !z ? '–' : z.lo === z.hi ? nf(z.lo) : `${nf(z.lo)}–${nf(z.hi)}`;
+const cls = n => n > 0 ? 'pos' : n < 0 ? 'neg' : '';
+const buCls = b => b === 'Long build-up' ? 'lb' : b === 'Short build-up' ? 'sb' : b === 'Short covering' ? 'sc' : b === 'Long unwinding' ? 'lu' : '';
+const bu = b => b ? `<span class="bu ${buCls(b)}">${esc(b)}</span>` : '<span class="mut">–</span>';
+const dateTxt = s => { if(!s) return '–'; const d = new Date(s.length <= 10 ? s+'T15:30' : s); return d.toLocaleString('en-IN', {day:'2-digit', month:'short', year:'numeric', ...(s.length > 10 ? {hour:'2-digit', minute:'2-digit', hour12:false} : {})}); };
+
+function toast(msg){ const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toast.h); toast.h = setTimeout(() => t.hidden = true, 3200); }
+
+/* ---------- personal history (this browser only) + IV bands ---------- */
+const BANDS_DEFAULT = {NIFTY:[11,16], BANKNIFTY:[13,19], SENSEX:[11,16]};
+const bands = Object.assign({}, BANDS_DEFAULT, store.get('bands') || {});
+const histKey = i => 'hist.' + i;
+function getHist(i){ const h = store.get(histKey(i)); return Array.isArray(h) ? h : []; }
+function saveHist(i, d, m){
+  if (d.sample || !d.expiry) return;
+  const h = getHist(i).filter(x => !(x.asof === d.asof && x.expiry === d.expiry));
+  h.push({ asof:d.asof, expiry:d.expiry, F:m.F, iv:m.atmIV, pcr:m.pcrOi, maxPain:m.maxPain, cz:m.callZone && [m.callZone.lo, m.callZone.hi], pz:m.putZone && [m.putZone.lo, m.putZone.hi] });
+  h.sort((a, b) => a.asof < b.asof ? -1 : 1);
+  store.set(histKey(i), h.slice(-400));
+}
+
+const GLOSS = {
+  pcr:'Put/Call Ratio: total put open interest divided by total call open interest. Below 0.80 is call-heavy, above 1.20 is put-heavy.',
+  oi:'Open interest: the number of option contracts still open (not yet closed or expired).',
+  oival:'Open interest × option price, added across strikes: the premium money tied up on each side.',
+  buildup:'What changed today at a strike, from price and OI together. Fresh buying: price up, OI up. Fresh selling: price down, OI up. Sellers exiting: price up, OI down. Buyers exiting: price down, OI down.',
+  callwall:'The single strike with the highest call open interest. Call sellers there lose if the index rises above it, so they tend to defend it.',
+  putwall:'The single strike with the highest put open interest. Put sellers there lose if the index falls below it, so they tend to defend it.',
+  maxpain:'The expiry level at which option buyers as a group would collect the least. Calculated by testing every strike as the settlement price.',
+  support:'The lowest of the three strikes with the most put open interest: the bottom of the zone put sellers defend.',
+  resistance:'The highest of the three strikes with the most call open interest: the top of the zone call sellers defend.',
+  breakout:'One strike above resistance. Holding above it means the call sellers\' zone has been crossed.',
+  breakdown:'One strike below support. Holding below it means the put sellers\' zone has been crossed.',
+  upside:'Three strikes above resistance: a wider reference for an extended move up.',
+  downside:'Three strikes below support: a wider reference for an extended move down.',
+  thin:'Strikes where both call and put open interest are below 40% of the chain average. Few positions defend these levels, so price can pass through quickly.',
+  straddle:'Buying the ATM call and ATM put together. Its price is the move the market treats as fair by expiry.',
+  atm:'At the money: the strike closest to the current index level.',
+  iv:'Implied volatility: the yearly movement that option prices assume. Higher IV means more expensive options.',
+  skew:'The IV difference between an out-of-the-money put and an out-of-the-money call at about the same distance.',
+  theta:'How much an option loses in value each day if nothing else changes.',
+  gamma:'How fast an option\'s delta changes as the index moves.',
+  gex:'Net gamma exposure: call gamma × call OI minus put gamma × put OI, assuming market makers are long calls and short puts. Positive tends to damp moves; negative tends to amplify them.',
+  flip:'The index level where net gamma exposure changes sign.',
+  liq:'The call and put strike with the most open interest within 2 strikes of ATM: usually the easiest to trade, with the tightest prices.',
+  level:'The index level here is worked out from option prices (put-call parity), so it lines up with the chain.'
+};
+const term = (label, key) => `<span class="term" tabindex="0">${label}<span class="tip" role="tooltip">${GLOSS[key]}</span></span>`;
+const BULL = {ce:{'Long build-up':1,'Short covering':1}, pe:{'Short build-up':1,'Long unwinding':1}};
+const BEAR = {ce:{'Short build-up':1,'Long unwinding':1}, pe:{'Long build-up':1,'Short covering':1}};
+const FLOW_TXT = {'Long build-up':'fresh buying','Short build-up':'fresh selling','Short covering':'sellers exiting','Long unwinding':'buyers exiting'};
+
+function chainRead(m, d){
+  const N = (x, dp=0) => `<span class="rnum">${nf(x, dp)}</span>`, ix = S.idx, exp = dateTxt(d.expiry), F = m.F, st = m.step;
+  const ksList = ks => ks.length > 3 && ks.every((k, i) => !i || k - ks[i-1] === st) ? `${nf(ks[0])}–${nf(ks[ks.length-1])}` : ks.map(k => nf(k)).join(', ');
+  const away = k => { const x = k - F; return `${nf(Math.abs(x))} pts ${x >= 0 ? 'above' : 'below'}`; };
+  const secs = [];
+
+  /* ===== Positioning ===== */
+  const P = [];
+  const pcr = m.pcrOi, share = m.ceOi / (m.ceOi + m.peOi) * 100;
+  const pos = pcr < 0.8 ? ['Call-heavy','dn','Call sellers dominate. They usually defend the levels above, so rallies can run into supply.']
+           : pcr > 1.2 ? ['Put-heavy','up','Put sellers dominate. They usually defend the levels below, so dips can find buyers.']
+           : ['Balanced','','Neither side has a clear upper hand on open interest.'];
+  P.push({k:term('Call vs put OI','pcr'), tag:pos[0], tone:pos[1],
+    html:`PCR ${N(pcr,2)}: for every 100 call contracts open there are ${N(pcr*100)} put contracts. Calls hold ${N(share)}% of all ${term('open interest','oi')}.`,
+    means:pos[2], note:`PCR on today's volume: ${nf(m.pcrVol,2)}. Bands: below 0.80 call-heavy, 0.80–1.20 balanced, above 1.20 put-heavy.`});
+  let cv = 0, pv = 0; m.rows.forEach(r => { cv += (r.ce.oi||0)*(r.ce.ltp||0); pv += (r.pe.oi||0)*(r.pe.ltp||0); });
+  const diff = (cv - pv) / 1e7, big = cv > pv*1.15 ? 'c' : pv > cv*1.15 ? 'p' : '';
+  P.push({k:term('Money in calls vs puts','oival'), tag: big === 'c' ? 'More in calls' : big === 'p' ? 'More in puts' : 'Close', tone:'',
+    html:`₹${N(cv/1e7,2)} Cr in calls vs ₹${N(pv/1e7,2)} Cr in puts: ₹${N(Math.abs(diff),2)} Cr more in ${diff >= 0 ? 'calls' : 'puts'}.`,
+    means: big === 'c' ? 'Clearly more premium is committed to calls.' : big === 'p' ? 'Clearly more premium is committed to puts.' : 'The premium committed on each side is close, so there is no strong one-sided bet by value.',
+    note:'"More" means at least 15% higher.'});
+  const near = m.rows.filter(r => Math.abs(r.strike - F) <= st * 3.01);
+  let bu = 0, be = 0; const by = {ce:{}, pe:{}};
+  near.forEach(r => ['ce','pe'].forEach(s => { const b = r[s].build; if (!b) return; (by[s][b] = by[s][b] || []).push(r.strike); if (BULL[s][b]) bu++; if (BEAR[s][b]) be++; }));
+  const top = s => { const e = Object.entries(by[s]).sort((a,b) => b[1].length - a[1].length)[0]; return e ? `${FLOW_TXT[e[0]] || e[0]} at ${e[1].length === near.length ? `all ${near.length} strikes (${ksList(e[1])})` : ksList(e[1])}` : 'no data'; };
+  const tot = bu + be;
+  const flow = !tot ? ['No data','','No build-up data in this file.','No build-up data']
+    : bu >= be*2 ? ['Leans up','up',`Traders are buying calls and selling puts close to the current level. Both are positions that gain if ${ix} holds or rises.`,'Bullish build-up']
+    : be >= bu*2 ? ['Leans down','dn',`Traders are selling calls and buying puts close to the current level. Both are positions that gain if ${ix} stays below or falls.`,'Bearish build-up']
+    : ['Mixed','wa','New positions near the current level are split; they do not point one way.','Mixed build-up'];
+  P.push({k:term('New positions near ATM','buildup'), tag:flow[0], tone:flow[1], html:`Calls: ${top('ce')} · Puts: ${top('pe')}`, means:flow[2],
+    note:`${near.length} strikes within 3 steps of ${ix}: ${bu} signals point up, ${be} point down.`});
+  secs.push(['Positioning', P]);
+
+  /* ===== Levels ===== */
+  const L = [];
+  const cw = row(m, m.callWall), pw = row(m, m.putWall), dC = m.callWall - F, dP = F - m.putWall;
+  let loc;
+  if (dC < 0) loc = ['Above call wall','up',`${ix} is above the biggest call OI strike. Sellers there are losing, and their buying back can add to a rise.`];
+  else if (dP < 0) loc = ['Below put wall','dn',`${ix} is below the biggest put OI strike. Sellers there are losing, and their exits can add to a fall.`];
+  else if (dP < dC * 0.5) loc = ['Near support','wa',`${ix} is much closer to the put wall than the call wall: support is close below, resistance is further away.`];
+  else if (dC < dP * 0.5) loc = ['Near resistance','wa',`${ix} is much closer to the call wall than the put wall: resistance is close above, support is further away.`];
+  else loc = ['Midway','',`${ix} is roughly midway between the two walls, with room on both sides.`];
+  L.push({k:`Where ${ix} stands`, tag:loc[0], tone:loc[1],
+    html:`${term(ix, 'level')} ${N(F)}. ${term('Call wall','callwall')} ${N(m.callWall)} (${lakh(cw.ce.oi)}), ${away(m.callWall)}. ${term('Put wall','putwall')} ${N(m.putWall)} (${lakh(pw.pe.oi)}), ${away(m.putWall)}.`,
+    means:loc[2], note:`${term('Max pain','maxpain')} ${nf(m.maxPain)}, ${away(m.maxPain)}.`});
+  const callTop = m.callZone.ks, putTop = m.putZone.ks;
+  const sup = Math.min(...putTop), res = Math.max(...callTop);
+  const lv = [['Upside','upside',res + 3*st],['Breakout','breakout',res + st],['Resistance','resistance',res],['Support','support',sup],['Breakdown','breakdown',sup - st],['Downside','downside',sup - 3*st]];
+  const lvRows = [...lv.map(([n, k, v]) => ({n:term(n, k), v, cls: k === 'resistance' ? 'ce' : k === 'support' ? 'pe' : ''})), {n:`<b>${ix} now</b>`, v:F, cls:'now'}].sort((a, b) => b.v - a.v);
+  const ladder = `<div class="lvwrap"><table class="lv"><tbody>${lvRows.map(x => `<tr class="${x.cls}"><td>${x.n}</td><td class="r">${nf(x.v)}</td><td class="r mut">${x.cls === 'now' ? '' : (x.v >= F ? '+' : '−') + nf(Math.abs(x.v - F))}</td></tr>`).join('')}</tbody></table></div>`;
+  const inside = F >= sup && F <= res;
+  L.push({k:'Key levels', tag: inside ? 'Inside range' : F > res ? 'Above range' : 'Below range', tone: inside ? '' : F > res ? 'up' : 'dn',
+    html:`${term('Support','support')} ${N(sup)} to ${term('resistance','resistance')} ${N(res)}: a ${N(res - sup)}-point range built from the top 3 OI strikes on each side.${ladder}`,
+    means: inside ? `${ix} is inside the range. A close above ${nf(res + st)} or below ${nf(sup - st)} would mean the writers' zone has been crossed.` : F > res ? `${ix} is above resistance, so the call writers' zone is already crossed. ${nf(res)} becomes the first level to hold on a dip.` : `${ix} is below support, so the put writers' zone is already crossed. ${nf(sup)} becomes the first level to clear on a bounce.`,
+    note:`Top 3 call OI: ${callTop.map(k => nf(k)).join(', ')}. Top 3 put OI: ${putTop.map(k => nf(k)).join(', ')}. Breakout/breakdown ±1 strike, upside/downside ±3 strikes.`});
+  const avgC = m.rows.reduce((a, r) => a + (r.ce.oi||0), 0) / m.rows.length, avgP = m.rows.reduce((a, r) => a + (r.pe.oi||0), 0) / m.rows.length;
+  const thin = m.rows.filter(r => (r.ce.oi||0) < avgC*0.4 && (r.pe.oi||0) < avgP*0.4).map(r => r.strike).sort((a, b) => Math.abs(a - F) - Math.abs(b - F)).slice(0, 4).sort((a, b) => a - b);
+  L.push({k:term('Thin OI zones','thin'), tag: thin.length ? `${thin.length} found` : 'None', tone: thin.length ? 'wa' : '',
+    html: thin.length ? `Few positions at ${thin.map(k => `${N(k)} (${away(k)})`).join(', ')}.` : 'No strike has unusually thin open interest on both sides.',
+    means: thin.length ? 'Little open interest defends these strikes, so if price gets there it can move through them quickly.' : 'Positions are spread fairly evenly, so there are no obvious air pockets.',
+    note:'Thin = both call and put OI below 40% of the chain average.'});
+  secs.push(['Levels', L]);
+
+  /* ===== Activity ===== */
+  const A = [];
+  const hv = [...m.rows].map(r => ({k:r.strike, c:r.ce.vol||0, p:r.pe.vol||0, t:(r.ce.vol||0)+(r.pe.vol||0), oi:(r.ce.chgOi||0)+(r.pe.chgOi||0)})).sort((a, b) => b.t - a.t).slice(0, 4);
+  const vt = `<div class="lvwrap"><table class="lv"><thead><tr><th>Strike</th><th class="r">Call vol</th><th class="r">Put vol</th><th class="r">Net OI change</th></tr></thead><tbody>${hv.map(v => `<tr><td>${nf(v.k)}${v.k === m.atm ? ' · ATM' : ''}</td><td class="r">${lakh(v.c)}</td><td class="r">${lakh(v.p)}</td><td class="r ${v.oi > 0 ? 'pos' : v.oi < 0 ? 'neg' : ''}">${sgn(v.oi, lakh)}</td></tr>`).join('')}</tbody></table></div>`;
+  const putHeavyVol = hv.filter(v => v.p > v.c).length;
+  A.push({k:'Heaviest trading', tag:`${nf(hv[0].k)}`, tone:'',
+    html:`Most traded strikes today, with whether positions grew or shrank.${vt}`,
+    means:`${(n => n === hv.length ? `All ${n} strikes added open interest: today's trading opened new positions rather than closing them.` : n === 0 ? 'Open interest fell at all of these strikes: today\'s trading mostly closed existing positions.' : `${n} of ${hv.length} strikes added open interest; the rest saw positions being closed.`)(hv.filter(v => v.oi > 0).length)} ${putHeavyVol >= 3 ? 'Puts dominated the volume.' : putHeavyVol <= 1 ? 'Calls dominated the volume.' : 'Volume was split between calls and puts.'}`,
+    note:'Ranked by call + put volume.'});
+  // gamma regime on engine gamma
+  const gex = S2 => m.rows.reduce((a, r) => { const gc = ENG.greeks(S2, r.strike, m.T, r.ce.eiv || m.atmIV, true), gp = ENG.greeks(S2, r.strike, m.T, r.pe.eiv || m.atmIV, false); return a + (gc ? gc.gamma * (r.ce.oi||0) : 0) - (gp ? gp.gamma * (r.pe.oi||0) : 0); }, 0);
+  const g0 = gex(F);
+  let flipK = null, best = Infinity;
+  for (let x = m.kmin; x < m.kmax; x += st/4){ const a = gex(x), b = gex(x + st/4); if (a === 0 || a * b < 0){ const z = x + (st/4) * a / (a - b); if (Math.abs(z - F) < best){ best = Math.abs(z - F); flipK = z; } } }
+  A.push({k:term('Gamma regime','gex'), tag: g0 > 0 ? 'Positive gamma' : 'Negative gamma', tone: g0 > 0 ? '' : 'wa',
+    html: flipK ? `Net gamma exposure is ${g0 > 0 ? 'positive' : 'negative'} at ${nf(F)}. It ${term('flips','flip')} near ${N(flipK)} (${away(flipK)}).` : `Net gamma exposure is ${g0 > 0 ? 'positive' : 'negative'} across the whole loaded range.`,
+    means: g0 > 0 ? `Market makers hedging this book would sell into rises and buy into falls, which tends to keep ${ix} in a range.${flipK ? ` Below ${nf(flipK)} that support fades and moves can speed up.` : ''}` : `Market makers hedging this book would buy into rises and sell into falls, which tends to make moves bigger.${flipK ? ` Above ${nf(flipK)} this calms down.` : ''}`,
+    note:'Assumes market makers are long calls and short puts, the common convention. Their real positions are not published, so treat this as a rough guide.'});
+  secs.push(['Activity', A]);
+
+  /* ===== Volatility & time ===== */
+  const V = [];
+  const pct = m.straddle / F * 100;
+  const nb = m.rows.filter(r => Math.abs(r.strike - m.atm) <= st * 2.01);
+  const bc = nb.reduce((a, b) => (b.ce.oi||0) > (a.ce.oi||0) ? b : a), bp = nb.reduce((a, b) => (b.pe.oi||0) > (a.pe.oi||0) ? b : a);
+  V.push({k:'Expected move', tag:`±${nf(m.straddle)} pts`, tone:'',
+    html:`The ${term('ATM straddle','straddle')} ${N(m.atm)} costs ₹${N(m.straddle,2)} (${N(m.atmRow.ce.ltp,2)} CE + ${N(m.atmRow.pe.ltp,2)} PE). Market-priced range by ${exp}: ${N(F - m.straddle)} to ${N(F + m.straddle)} (±${nf(pct,2)}%).`,
+    means:`If ${ix} settles inside this range, straddle sellers keep premium; outside it, buyers profit.${m.sigmaMove ? ` About 2 times in 3, ${ix} should stay within ${nf(F - m.sigmaMove)} to ${nf(F + m.sigmaMove)}.` : ''}`,
+    note:`${term('Most liquid near ATM','liq')}: ${nf(bc.strike)} CE (${lakh(bc.ce.oi)} OI) and ${nf(bp.strike)} PE (${lakh(bp.pe.oi)} OI). ${nf(m.T*365, Math.abs(m.T*365 - Math.round(m.T*365)) < 0.05 ? 0 : 1)} days to expiry.`});
+  if (m.skew != null){
+    const sk = m.skew;
+    const t = sk > 1.5 ? ['Puts costlier','wa','Traders are paying extra for downside protection. This is normal for an index; it signals stress only when the gap widens sharply.']
+            : sk < -1.5 ? ['Calls costlier','wa','Traders are paying extra for upside calls, which is unusual for an index and shows strong demand for a rise.']
+            : ['Even','','Puts and calls at the same distance cost about the same. No extra demand for either side.'];
+    V.push({k:term('Put vs call premium','skew'), tag:t[0], tone:t[1],
+      html:`Put ${N(m.skewP)} (${away(m.skewP)}) carries ${N(Math.abs(sk),2)} points ${sk >= 0 ? 'more' : 'less'} IV than call ${N(m.skewC)} (${away(m.skewC)}).`,
+      means:t[2], note:'Strikes about one expected move away on each side. Within 1.5 points counts as even.'});
+  }
+  const iv = (m.atmIV || 0) * 100, [lo, hi] = bands[ix] || BANDS_DEFAULT[ix];
+  const hist = getHist(ix), ivs = hist.map(h => h.iv * 100).filter(x => x > 0);
+  const day = F * (m.atmIV || 0) / Math.sqrt(252);
+  let reg = iv < lo ? ['Cheap premiums','up'] : iv > hi ? ['Expensive premiums','dn'] : ['Normal premiums',''];
+  let regNote = `Your ${ix} range: below ${lo}% cheap, above ${hi}% expensive. ${ivs.length} of 20 uploads saved; after 20, today is ranked against your own past uploads.`;
+  if (ivs.length >= 20){
+    const pr = ivs.filter(x => x < iv).length / ivs.length * 100;
+    reg = pr < 25 ? ['Cheap premiums','up'] : pr > 75 ? ['Expensive premiums','dn'] : ['Normal premiums',''];
+    regNote = `Today's IV is higher than ${nf(pr,0)}% of your last ${ivs.length} uploads. Below 25% cheap, above 75% expensive.`;
+  }
+  const impl = reg[0] === 'Cheap premiums' ? 'Options are cheap: buying costs less, and sellers collect less for the same risk.'
+             : reg[0] === 'Expensive premiums' ? 'Options are expensive: sellers are paid more for the same risk; buyers need a bigger move and lose if IV falls.'
+             : 'Options are fairly priced: buyers are not overpaying and sellers are not getting extra.';
+  V.push({k:'Premium level', tag:reg[0], tone:reg[1],
+    html:`${term('ATM IV','iv')} ${N(iv,2)}%. Option prices assume ${ix} moves about ${N(day)} points (${nf(day/F*100,2)}%) on a typical day.`,
+    means:impl, note:`${regNote} Daily move = ${ix} × IV ÷ √252.`, bands:true});
+  const th = Math.abs((m.atmRow.ce.eg?.theta || 0) + (m.atmRow.pe.eg?.theta || 0));
+  V.push({k:term('Time decay','theta'), tag:`₹${nf(th*d.lot)}/day`, tone:'',
+    html:`The ${N(m.atm)} straddle loses about ${N(th,2)} points a day: ₹${N(th*d.lot)} per lot of ${d.lot}.`,
+    means:`If ${ix} does not move tomorrow, a buyer of one lot loses about ₹${nf(th*d.lot)} and a seller gains it. Decay speeds up into expiry.`,
+    note:'At today\'s IV. Lot size is set in the bar above.'});
+  secs.push(['Volatility & time', V]);
+
+  const headline = `${pos[0]} OI · ${flow[3]} · ${inside ? `Range ${nf(sup)}–${nf(res)}` : F > res ? `Above ${nf(res)} resistance` : `Below ${nf(sup)} support`} · ${reg[0]} · ±${nf(m.straddle)} pts by ${exp}`;
+  return { headline, secs, lean: flow[0] === 'Leans up' ? 'Bullish' : flow[0] === 'Leans down' ? 'Bearish' : 'Neutral', sup, res, reg: reg[0], flipK, bestCE: bc.strike, bestPE: bp.strike, flowCE: top('ce'), flowPE: top('pe'), hv, posTag: pos[0], g0, cv, pv };
+}
+function readHTML(m, d){
+  const r = chainRead(m, d), [lo, hi] = bands[S.idx] || BANDS_DEFAULT[S.idx];
+  return `<section class="panel read" aria-label="Chain read"><p class="eyebrow">Chain read · ${S.idx} · expiry ${esc(dateTxt(d.expiry))}</p><h2>${esc(r.headline)}</h2>
+    <p class="lead">A plain-language read of this option chain. It describes positioning and pricing; it is not a trade suggestion. Visible only to you. Hover any underlined term for its meaning.</p>
+    ${r.secs.map(([title, rows]) => `<h3 class="rsec">${title}</h3>${rows.map(x => `<div class="rrow"><div class="rk">${x.k}</div><div class="rv"><span class="rtag ${x.tone}">${esc(x.tag)}</span>${x.html}
+      <p class="means"><b>What it means:</b> ${x.means}</p><p>${x.note}</p>
+      ${x.bands ? `<div class="bands"><span>Your IV range for ${S.idx}:</span><label for="bandLo">cheap below</label><input type="number" id="bandLo" step="0.5" min="1" value="${lo}"><label for="bandHi">expensive above</label><input type="number" id="bandHi" step="0.5" min="1" value="${hi}"><span>%</span></div>` : ''}</div></div>`).join('')}`).join('')}
+  </section>`;
+}
+
+/* ---------- compute ---------- */
+function recompute(i = S.idx){
+  const d = S.data[i]; d.m = null; d.err = null;
+  if (!Object.keys(d.files).length) return;
+  if (!d.expiry){ d.err = 'Set the expiry date of the uploaded chain to run the engine.'; return; }
+  const T = (new Date(d.expiry + 'T15:30') - new Date(d.asof)) / (365 * 864e5);
+  d.merged = ENG.merge(d.files);
+  const m = ENG.model(d.merged, T);
+  if (m.error){ d.err = m.error; return; }
+  d.m = m; saveHist(i, d, m); logPosSnap(i, d, m);
+  if (!d.legs) d.legs = legsFrom(ENG.templates(m, S.width).find(t => t.name === 'Long Straddle').legs, m);
+  else d.legs.forEach(l => { const r = row(m, l.K); if (r && l.auto){ const o = r[l.type === 'CE' ? 'ce' : 'pe']; l.prem = o.ltp; l.iv = o.eiv; } });
+}
+const row = (m, K) => m.rows.find(r => r.strike === K);
+function legsFrom(legs, m){
+  return legs.map(l => { const r = row(m, l.K); const o = r ? r[l.type === 'CE' ? 'ce' : 'pe'] : null; return { ...l, prem: o ? o.ltp : 0, iv: o ? o.eiv : null, auto: true }; });
+}
+
+function ageBadge(d){
+  if (!d.asof || !Object.keys(d.files).length) return '';
+  const a = new Date(d.asof), n = new Date(), mins = (n - a) / 6e4;
+  let txt, c;
+  if (mins < -5){ txt = 'time is later than now: check it'; c = 'dn'; }
+  else if (a.toDateString() === n.toDateString()){ txt = mins < 1 ? 'just now' : mins < 60 ? `${Math.round(mins)} min old` : `${Math.floor(mins/60)} h ${Math.round(mins % 60)} min old`; c = mins > 240 ? 'wa' : 'up'; }
+  else { const days = Math.round((new Date(n.toDateString()) - new Date(a.toDateString())) / 864e5); txt = days === 1 ? 'from yesterday' : `${days} days old`; c = days === 1 ? 'wa' : 'dn'; }
+  if (d.expiry && new Date(d.expiry + 'T15:30') < n){ txt += ' · expiry has passed'; c = 'dn'; }
+  return `<span class="age ${c}" title="Compares the data time you set with your device clock.">Data ${txt}</span>`;
+}
+
+/* ---------- top chrome ---------- */
+function renderTop(){
+  $('#idxTabs').innerHTML = IDX.map(i => `<button type="button" data-idx="${i}" aria-pressed="${i === S.idx}">${i}</button>`).join('');
+  const d = S.data[S.idx];
+  $('#bannerSlot').innerHTML = '';
+  const files = Object.entries(d.files).map(([f, o]) => `<span class="chip"><b>${roleOf(d.files, f)}</b><span class="mut">${o.rows.length} strikes</span><button class="x" type="button" data-rm="${f}" aria-label="Remove ${roleOf(d.files, f).toLowerCase()}">×</button></span>`).join('');
+  $('#status').innerHTML = `
+    <div class="chips">${files || '<span class="note">No file loaded for ' + S.idx + '</span>'}${ageBadge(d)}</div>
+    <div class="field"><label for="asof">Data time</label><input type="datetime-local" id="asof" value="${d.asof}"></div>
+    <div class="field"><label for="expiry">Expiry</label><input type="date" id="expiry" value="${d.expiry}"></div>
+    <div class="field"><label for="lot">Lot size</label><input type="number" id="lot" min="1" step="1" value="${d.lot}"></div>
+    <button class="btn small" type="button" data-act="resetidx" title="Clears the loaded files, the tracked position and its P&amp;L history for ${S.idx}">${S.armReset ? `Click again to reset ${S.idx}` : `Reset ${S.idx}`}</button>`;
+  const views = [['chain','Option chain'],['greeks','Greeks & IV'],['compare','Multistrike'],['strategies','Strategies'],['builder','Strategy builder'],['position','Position'],['share','Share & export']];
+  $('#viewTabs').innerHTML = views.map(([k, t]) => `<button type="button" role="tab" data-view="${k}" aria-selected="${k === S.view}">${t}</button>`).join('');
+}
+
+/* ---------- views ---------- */
+function render(){
+  renderTop();
+  const d = S.data[S.idx], v = $('#view');
+  if (!Object.keys(d.files).length){
+    v.innerHTML = `<div class="empty"><h2>Load a ${S.idx} option chain</h2>
+      <p>Upload one option-chain export, or two exports of the same expiry from different providers. With two files, the self-describing layout (columns like strike_price) is used as primary and the mirrored layout adds day open/high/low and a cross-check. Drop the files anywhere on this page or use the button.</p>
+      <label class="btn primary" for="fileIn">Upload CSV</label></div>`;
+    return;
+  }
+  if (d.err){ v.innerHTML = `<div class="empty"><h2>Engine paused</h2><p>${esc(d.err)}</p></div>`; return; }
+  const m = d.m;
+  v.innerHTML = ({chain:vChain, greeks:vGreeks, compare:vCompare, strategies:vStrats, builder:vBuilder, position:vPosition, share:vShare})[S.view](m, d);
+  if (S.view === 'share') drawCard();
+  if (S.view === 'position') updateWhatIf();
+}
+
+function metricsHTML(m){
+  const t = (k, v, s, c='') => `<div class="metric"><span class="k">${k}</span><span class="v ${c}">${v}</span>${s ? `<span class="s">${s}</span>` : ''}</div>`;
+  const lo = m.F - m.straddle, hi = m.F + m.straddle;
+  return `<div class="metrics">
+    ${t('Implied forward', nf(m.F,2), `parity, ${m.Fn} strikes, spread ${nf(m.Fspread,1)}`)}
+    ${t('ATM strike', nf(m.atm), `step ${nf(m.step)}`)}
+    ${t('ATM IV', pctv(m.atmIV,2), `${nf(m.T*365,1)} days to expiry`)}
+    ${t('PCR (OI)', nf(m.pcrOi,2), `PCR vol ${nf(m.pcrVol,2)}`)}
+    ${t('Max pain', nf(m.maxPain), `${nf(m.maxPain - m.F,0)} pts from forward`)}
+    ${t('Call OI zone', zoneTxt(m.callZone), `top 3: ${m.callZone ? m.callZone.ks.map(k => nf(k)).join(' · ') : '–'} · largest add ${nf(m.callAdd)}`, 'ce')}
+    ${t('Put OI zone', zoneTxt(m.putZone), `top 3: ${m.putZone ? m.putZone.ks.map(k => nf(k)).join(' · ') : '–'} · largest add ${nf(m.putAdd)}`, 'pe')}
+    ${t('Straddle range', `${nf(lo)}–${nf(hi)}`, `ATM straddle ₹${nf(m.straddle,2)}`)}
+    ${t('1σ range', m.sigmaMove ? `${nf(m.F - m.sigmaMove)}–${nf(m.F + m.sigmaMove)}` : '–', m.sigmaMove ? `±${nf(m.sigmaMove)} pts at ATM IV` : '')}
+    ${t('IV skew', m.skew == null ? '–' : sgn(m.skew, x => nf(x,2)) + ' pts', m.skew == null ? '' : `${nf(m.skewP)} PE vs ${nf(m.skewC)} CE`)}
+  </div>`;
+}
+
+function ladderTags(m, cr){
+  const st = m.step, T = {};
+  const add = (k, side, label, cls) => { if (k == null) return; const key = m.rows.some(r => r.strike === k) ? k : m.rows.reduce((a, r) => Math.abs(r.strike - k) < Math.abs(a - k) ? r.strike : a, m.rows[0].strike); (T[key] = T[key] || {ce:[], pe:[], mid:[]})[side].push([label, cls]); };
+  add(cr.res, 'ce', 'Resistance', 'ce'); add(m.callWall, 'ce', 'Call wall', 'ce'); add(cr.res + st, 'ce', 'Breakout', ''); add(cr.res + 3*st, 'ce', 'Upside', ''); add(cr.bestCE, 'ce', 'CE liquidity', 'liq');
+  add(cr.sup, 'pe', 'Support', 'pe'); add(m.putWall, 'pe', 'Put wall', 'pe'); add(cr.sup - st, 'pe', 'Breakdown', ''); add(cr.sup - 3*st, 'pe', 'Downside', ''); add(cr.bestPE, 'pe', 'PE liquidity', 'liq');
+  add(m.maxPain, 'mid', 'Max pain', ''); if (cr.flipK) add(cr.flipK, 'mid', 'Gamma flip', '');
+  return T;
+}
+const ltag = arr => (arr || []).map(([t, c]) => `<span class="lt ${c}">${t}</span>`).join('');
+
+function vChain(m){
+  const cr = chainRead(m, S.data[S.idx]), LT = ladderTags(m, cr);
+  const maxOi = Math.max(...m.rows.map(r => Math.max(r.ce.oi || 0, r.pe.oi || 0)), 1);
+  const oiCell = (o, s) => `<td class="oi ${s}"><span class="bar" style="width:${(o.oi||0)/maxOi*100}%"></span><span>${lakh(o.oi)}</span></td>`;
+  const body = m.rows.map(r => {
+    const itmC = r.strike < m.F ? ' itm' : '', itmP = r.strike > m.F ? ' itm' : '';
+    const fc = r.mismatch.ce ? '<span class="flag" title="The two files differ here"></span>' : '';
+    const fp = r.mismatch.pe ? '<span class="flag" title="The two files differ here"></span>' : '';
+    const tg = LT[r.strike] || {};
+    return `<tr class="${r.strike === m.atm ? 'atm' : ''}">
+      <td class="l tags">${ltag(tg.ce)}</td>${oiCell(r.ce,'ce')}<td class="${cls(r.ce.chgOi)}${itmC}">${sgn(r.ce.chgOi, lakh)}</td><td class="l${itmC}">${bu(r.ce.build)}</td>
+      <td class="${itmC}">${lakh(r.ce.vol)}</td><td class="${itmC}">${pctv(r.ce.eiv)}</td><td class="${itmC}"><b>${nf(r.ce.ltp,2)}</b>${fc}</td>
+      <td class="k">${nf(r.strike)}${tg.mid ? `<div class="midtags">${ltag(tg.mid)}</div>` : ''}</td>
+      <td class="${itmP}"><b>${nf(r.pe.ltp,2)}</b>${fp}</td><td class="${itmP}">${pctv(r.pe.eiv)}</td><td class="${itmP}">${lakh(r.pe.vol)}</td>
+      <td class="l${itmP}">${bu(r.pe.build)}</td><td class="${cls(r.pe.chgOi)}${itmP}">${sgn(r.pe.chgOi, lakh)}</td>${oiCell(r.pe,'pe')}<td class="l tags">${ltag(tg.pe)}</td></tr>`;
+  }).join('');
+  return `<div style="display:flex;flex-direction:column;gap:14px">${readHTML(m, S.data[S.idx])}${metricsHTML(m)}
+  <div class="tbl-wrap"><table>
+    <thead><tr class="grp"><th colspan="7" class="ceh l">Calls</th><th></th><th colspan="7" class="peh" style="text-align:right">Puts</th></tr>
+    <tr><th class="l">Key levels</th><th>OI</th><th>Chg OI</th><th class="l">Build-up</th><th>Volume</th><th>IV</th><th>LTP</th><th style="text-align:center">Strike</th><th>LTP</th><th>IV</th><th>Volume</th><th class="l">Build-up</th><th>Chg OI</th><th>OI</th><th class="l">Key levels</th></tr></thead>
+    <tbody>${body}</tbody></table></div>
+  <div class="legend"><span>Key levels: support and resistance = outermost of the top-3 OI strikes; breakout/breakdown ±1 strike; upside/downside ±3 strikes; CE/PE liquidity = highest OI within 2 strikes of ATM. Max pain and gamma flip sit under the strike.</span></div>
+  <div class="legend"><span>IV = engine IV from LTP</span><span>Shaded = in the money vs forward</span><span>Dark strike = ATM</span><span><span class="flag" style="margin:0 5px 0 0"></span>source mismatch (LTP &gt; 2% or OI &gt; 5%)</span><span>OI in units; L = lakh</span></div>
+  </div>`;
+}
+
+function smileSVG(m){
+  const W = 760, H = 280, pl = 46, pr = 14, pt = 14, pb = 34;
+  const pts = { eng:[], pc:[], pp:[] };
+  m.rows.forEach(r => {
+    const e = r.strike < m.F ? r.pe.eiv : r.ce.eiv; if (e) pts.eng.push([r.strike, e*100]);
+    if (r.ce.iv) pts.pc.push([r.strike, r.ce.iv]); if (r.pe.iv) pts.pp.push([r.strike, r.pe.iv]);
+  });
+  const all = [...pts.eng, ...pts.pc, ...pts.pp]; if (!all.length) return '';
+  const x0 = m.kmin, x1 = m.kmax;
+  let y0 = Math.min(...all.map(p => p[1])), y1 = Math.max(...all.map(p => p[1]));
+  y0 = Math.floor(y0 - 1); y1 = Math.ceil(y1 + 1);
+  const X = x => pl + (x - x0) / (x1 - x0 || 1) * (W - pl - pr), Y = y => pt + (1 - (y - y0) / (y1 - y0 || 1)) * (H - pt - pb);
+  const line = (p, c, dash) => p.length ? `<polyline fill="none" stroke="${c}" stroke-width="${dash ? 1.6 : 2.4}" ${dash ? 'stroke-dasharray="5 4"' : ''} points="${p.map(q => X(q[0]).toFixed(1)+','+Y(q[1]).toFixed(1)).join(' ')}"/>` : '';
+  const yt = niceTicks(y0, y1, 5), xt = niceTicks(x0, x1, 6);
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Implied volatility by strike">
+    ${yt.map(v => `<line x1="${pl}" x2="${W-pr}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line-2)"/><text x="${pl-6}" y="${Y(v)+4}" text-anchor="end">${v}%</text>`).join('')}
+    ${xt.map(v => `<text x="${X(v)}" y="${H-12}" text-anchor="middle">${nf(v)}</text>`).join('')}
+    <line x1="${X(m.F)}" x2="${X(m.F)}" y1="${pt}" y2="${H-pb}" stroke="var(--muted)" stroke-dasharray="2 3"/>
+    <text x="${X(m.F)+4}" y="${pt+10}" class="lbl">F ${nf(m.F)}</text>
+    ${line(pts.pc, 'var(--ce)', 1)}${line(pts.pp, 'var(--pe)', 1)}${line(pts.eng, 'var(--ink)', 0)}
+    ${pts.eng.map(q => `<circle cx="${X(q[0])}" cy="${Y(q[1])}" r="2.6" fill="var(--ink)"/>`).join('')}
+  </svg>`;
+}
+function niceTicks(a, b, n){
+  const span = b - a || 1, raw = span / n, mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const st = [1,2,2.5,5,10].map(x => x*mag).find(x => span / x <= n) || mag*10;
+  const out = []; for (let v = Math.ceil(a/st)*st; v <= b + 1e-9; v += st) out.push(+v.toFixed(6)); return out;
+}
+
+function vGreeks(m, d){
+  const g = (o, k, dp) => o.eg ? nf(o.eg[k], dp) : '–';
+  const pv = (v, dp) => v == null ? '–' : nf(v, dp);
+  const body = m.rows.map(r => `<tr class="${r.strike === m.atm ? 'atm' : ''}">
+    <td>${pctv(r.ce.eiv,2)}<span class="mut"> / ${pv(r.ce.iv,2)}</span></td><td>${g(r.ce,'delta',3)}<span class="mut"> / ${pv(r.ce.delta,2)}</span></td><td>${g(r.ce,'gamma',5)}<span class="mut"> / ${pv(r.ce.gamma,4)}</span></td><td>${g(r.ce,'theta',2)}<span class="mut"> / ${pv(r.ce.theta,2)}</span></td><td>${g(r.ce,'vega',2)}<span class="mut"> / ${pv(r.ce.vega,2)}</span></td>
+    <td class="k">${nf(r.strike)}</td>
+    <td>${pctv(r.pe.eiv,2)}<span class="mut"> / ${pv(r.pe.iv,2)}</span></td><td>${g(r.pe,'delta',3)}<span class="mut"> / ${pv(r.pe.delta,2)}</span></td><td>${g(r.pe,'gamma',5)}<span class="mut"> / ${pv(r.pe.gamma,4)}</span></td><td>${g(r.pe,'theta',2)}<span class="mut"> / ${pv(r.pe.theta,2)}</span></td><td>${g(r.pe,'vega',2)}<span class="mut"> / ${pv(r.pe.vega,2)}</span></td></tr>`).join('');
+  const q = [];
+  const mg = d.merged;
+  q.push(`${m.n} strikes from ${nf(m.kmin)} to ${nf(m.kmax)} (step ${nf(m.step)}). ${mg.second ? 'Two files merged: the primary file sets values, the cross-check file fills gaps and verifies them.' : 'Single file loaded.'}`);
+  const dropped = Object.entries(d.files).filter(([,o]) => o.dropped).map(([f,o]) => `${o.dropped} non-strike rows (totals) from the ${roleOf(d.files, f).toLowerCase()}`);
+  if (dropped.length) q.push('Dropped ' + dropped.join(', ') + '.');
+  if (mg.noQuote) q.push(`${mg.noQuote} strikes had no price on either side and were left out.`);
+  q.push(`Forward ${nf(m.F,2)} from put-call parity; the ${m.Fn} strikes used agree within ${nf(m.Fspread,2)} points.`);
+  if (m.provGap != null) q.push(`At ATM ${nf(m.atm)}, provider call IV and put IV differ by ${nf(Math.abs(m.provGap),2)} pts, which means the provider priced against a different underlying. Engine IVs differ by ${nf(Math.abs(m.engGap ?? 0),2)} pts, as parity requires.`);
+  if (m.mism.length) q.push(`Source mismatch on ${m.mism.length} strike${m.mism.length > 1 ? 's' : ''}: ${m.mism.map(r => nf(r.strike) + ' ' + ['ce','pe'].filter(s => r.mismatch[s]).map(s => s.toUpperCase()).join('/')).join(', ')}. The files were taken a few minutes apart; check that both are from the same moment.`);
+  if (m.unsolved) q.push(`${m.unsolved} option prices sit at or below intrinsic value against the forward, so no IV could be solved for them (typical for deep in-the-money strikes).`);
+  return `<div style="display:flex;flex-direction:column;gap:14px">
+  <div class="grid2">
+    <div class="panel"><div class="panel-head"><h2>Volatility smile</h2><div class="legend"><span><i style="background:var(--ink)"></i>Engine (OTM side)</span><span><i style="background:var(--ce)"></i>Provider call IV</span><span><i style="background:var(--pe)"></i>Provider put IV</span></div></div>${smileSVG(m)}</div>
+    <div class="panel"><div class="panel-head"><h2>Data checks</h2></div><ol class="qlist">${q.map(x => `<li>${x}</li>`).join('')}</ol></div>
+  </div>
+  <div class="tbl-wrap"><table>
+    <thead><tr class="grp"><th colspan="5" class="ceh l">Calls · engine / <span class="mut">provider</span></th><th></th><th colspan="5" class="peh" style="text-align:right">Puts · engine / <span class="mut">provider</span></th></tr>
+    <tr><th>IV</th><th>Delta</th><th>Gamma</th><th>Theta /day</th><th>Vega /1%</th><th style="text-align:center">Strike</th><th>IV</th><th>Delta</th><th>Gamma</th><th>Theta /day</th><th>Vega /1%</th></tr></thead>
+    <tbody>${body}</tbody></table></div>
+  <p class="note">Each cell shows engine / provider. Engine Greeks are per unit of the underlying, from Black-76 on the parity forward at each option's own engine IV; theta is per calendar day. Gaps against the provider usually come from a different underlying or expiry-time convention, so check the Data checks panel when they are large.</p></div>`;
+}
+
+function vCompare(m){
+  const ks = m.rows.map(r => r.strike);
+  if (!S.cmp || !S.cmp.every(k => ks.includes(k))){ const i = ks.indexOf(m.atm); S.cmp = ks.slice(Math.max(0, i-1), i+3); }
+  const sel = S.cmp.map(k => row(m, k));
+  const lines = [
+    ['LTP', o => nf(o.ltp,2)], ['Engine IV', o => pctv(o.eiv,2)], ['Provider IV', o => o.iv == null ? '–' : nf(o.iv,2)+'%'],
+    ['OI', o => lakh(o.oi)], ['Chg OI', o => `<span class="${cls(o.chgOi)}">${sgn(o.chgOi, lakh)}</span>`], ['Chg OI %', o => o.chgOiPct == null ? '–' : sgn(o.chgOiPct, x => nf(x,1)) + '%'],
+    ['Volume', o => lakh(o.vol)], ['Build-up', o => bu(o.build)],
+    ['Delta', o => o.eg ? nf(o.eg.delta,3) : '–'], ['Gamma', o => o.eg ? nf(o.eg.gamma,5) : '–'], ['Theta /day', o => o.eg ? nf(o.eg.theta,2) : '–'], ['Vega /1%', o => o.eg ? nf(o.eg.vega,2) : '–'],
+    ['Day open / high / low', o => o.open == null ? '<span class="mut">not in this file</span>' : `${nf(o.open,2)} / ${nf(o.high,2)} / ${nf(o.low,2)}`]
+  ];
+  const block = (s, title) => `<div class="tbl-wrap"><table><thead><tr><th class="l ${s}h">${title}</th>${sel.map(r => `<th>${nf(r.strike)}${r.strike === m.atm ? ' · ATM' : ''}</th>`).join('')}</tr></thead>
+    <tbody>${lines.map(([n, f]) => `<tr><td class="l" style="font-family:var(--f-ui)">${n}</td>${sel.map(r => `<td>${f(r[s])}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+  return `<div style="display:flex;flex-direction:column;gap:14px">
+    <div class="panel"><div class="panel-head"><h2>Pick up to 6 strikes</h2><span class="note">${S.cmp.length} selected</span></div>
+    <div class="filters">${ks.map(k => `<button type="button" class="pill" data-cmp="${k}" aria-pressed="${S.cmp.includes(k)}">${nf(k)}</button>`).join('')}</div></div>
+    ${block('ce','Calls')}${block('pe','Puts')}</div>`;
+}
+
+function legsTxt(L){ return L.map(l => `<span class="${l.side}"><b>${l.side === 'B' ? 'Buy' : 'Sell'}</b></span> ${l.lots > 1 ? l.lots + '× ' : ''}${nf(l.K)} ${l.type}`).join(' · '); }
+function sparkSVG(st, m){
+  const lo = Math.min(m.kmin, ...st.ks) - m.step, hi = Math.max(m.kmax, ...st.ks) + m.step;
+  const xs = Array.from({length:61}, (_, i) => lo + (hi-lo)*i/60), ys = xs.map(st.pay);
+  const mn = Math.min(...ys, 0), mx = Math.max(...ys, 0), W = 240, H = 46;
+  const X = x => (x-lo)/(hi-lo)*W, Y = y => 3 + (1-(y-mn)/(mx-mn||1))*(H-6);
+  const p = xs.map((x,i) => X(x).toFixed(1)+','+Y(ys[i]).toFixed(1)).join(' ');
+  const id = 'c' + Math.random().toString(36).slice(2,8);
+  return `<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">
+    <defs><clipPath id="${id}a"><rect x="0" y="0" width="${W}" height="${Y(0)}"/></clipPath><clipPath id="${id}b"><rect x="0" y="${Y(0)}" width="${W}" height="${H}"/></clipPath></defs>
+    <polygon points="0,${Y(0)} ${p} ${W},${Y(0)}" fill="var(--green)" opacity=".22" clip-path="url(#${id}a)"/>
+    <polygon points="0,${Y(0)} ${p} ${W},${Y(0)}" fill="var(--red)" opacity=".2" clip-path="url(#${id}b)"/>
+    <line x1="0" x2="${W}" y1="${Y(0)}" y2="${Y(0)}" stroke="var(--line)"/>
+    <polyline points="${p}" fill="none" stroke="var(--ink)" stroke-width="1.4" vector-effect="non-scaling-stroke"/>
+    <line x1="${X(m.F)}" x2="${X(m.F)}" y1="0" y2="${H}" stroke="var(--muted)" stroke-dasharray="2 2" vector-effect="non-scaling-stroke"/></svg>`;
+}
+/* ---------- fit ranking: direction from the trader, structure from the chain ---------- */
+const FAMILY = {
+  'Bull Call Spread':'debitV','Bear Put Spread':'debitV','Bull Put Spread':'creditV','Bear Call Spread':'creditV',
+  'Long Call':'single','Long Put':'single',
+  'Call Ratio Backspread':'back','Bear Call Ladder':'back','Put Ratio Backspread':'back','Bull Put Ladder':'back',
+  'Iron Condor':'creditN','Iron Butterfly':'creditN','Jade Lizard':'creditN','Short Strangle':'nakedN',
+  'Long Straddle':'longVol','Long Strangle':'longVol','Reverse Condor':'longVolSpread'
+};
+function fitScore(t, st, legs, m, ctx){
+  const R = [], F = m.F, lo = F - m.straddle, hi = F + m.straddle, sl = m.sigmaMove || m.straddle, fam = FAMILY[t.name];
+  const debit = st.net < 0, ivTxt = `IV ${nf(m.atmIV*100,1)}%`, reg = ctx.reg;
+  const sc = legs.filter(l => l.side === 'S' && l.type === 'CE').map(l => l.K), sp = legs.filter(l => l.side === 'S' && l.type === 'PE').map(l => l.K);
+  const lc = legs.filter(l => l.side === 'B' && l.type === 'CE').map(l => l.K), lp = legs.filter(l => l.side === 'B' && l.type === 'PE').map(l => l.K);
+  const be = st.be, up = t.view === 'Bullish';
+  // 1. premium level (30): long-volatility structures want cheap IV, short-volatility want rich IV, spreads are neutral to it
+  const longVol = ['single','back','longVol'].includes(fam), shortNaked = fam === 'nakedN';
+  let iv;
+  if (longVol){ iv = reg === 'Cheap premiums' ? 30 : reg === 'Expensive premiums' ? 6 : 15;
+    R.push(reg === 'Cheap premiums' ? `Cheap premiums (${ivTxt}): buying options is inexpensive, which suits this long-option structure.` : reg === 'Expensive premiums' ? `Expensive premiums (${ivTxt}): this structure buys options at above-normal prices.` : `Normal premiums (${ivTxt}): no price edge for a structure that is net long options.`); }
+  else if (shortNaked){ iv = reg === 'Expensive premiums' ? 30 : reg === 'Cheap premiums' ? 4 : 14;
+    R.push(reg === 'Expensive premiums' ? `Expensive premiums (${ivTxt}): selling collects above-normal premium.` : `${reg} (${ivTxt}): selling naked options without a premium edge.`); }
+  else { iv = reg === 'Normal premiums' ? 25 : (reg === 'Cheap premiums') === debit ? 30 : 12;
+    R.push(reg === 'Normal premiums' ? `Normal premiums (${ivTxt}): a spread buys and sells at fair prices, so the IV level is not working against it.` : `${reg} (${ivTxt}): ${(reg === 'Cheap premiums') === debit ? 'the net premium side of this spread suits the IV level.' : 'the net premium side of this spread works against the IV level.'}`); }
+  // 2. levels (25)
+  let lv = 15;
+  if (fam === 'debitV'){ const tg = up ? Math.max(...sc) : Math.min(...sp), ok = up ? tg <= ctx.res : tg >= ctx.sup;
+    lv = ok ? 25 : 10; R.push(ok ? `Profit target ${nf(tg)} is inside the ${nf(ctx.sup)}–${nf(ctx.res)} OI range, before the ${up ? 'call' : 'put'} writers' wall.` : `Profit target ${nf(tg)} is beyond ${up ? 'resistance ' + nf(ctx.res) : 'support ' + nf(ctx.sup)}; writers stand in the way.`); }
+  else if (fam === 'creditV'){ const k = up ? Math.min(...sp) : Math.max(...sc), ok = up ? k <= ctx.sup : k >= ctx.res, mid = up ? k <= F : k >= F;
+    lv = ok ? 25 : mid ? 14 : 6; R.push(ok ? `Short ${up ? 'put' : 'call'} ${nf(k)} sits behind ${up ? 'support ' + nf(ctx.sup) : 'resistance ' + nf(ctx.res)}, where writers defend.` : `Short ${up ? 'put' : 'call'} ${nf(k)} is in front of ${up ? 'support ' + nf(ctx.sup) : 'resistance ' + nf(ctx.res)}, so the wall does not protect it.`); }
+  else if (fam === 'single'){ const b = be[0], ok = up ? b <= ctx.res : b >= ctx.sup;
+    lv = ok ? 18 : 8; R.push(ok ? `Breakeven ${nf(b)} comes before ${up ? 'resistance ' + nf(ctx.res) : 'support ' + nf(ctx.sup)}, so it can turn profitable without breaking a wall.` : `Breakeven ${nf(b)} is beyond ${up ? 'resistance ' + nf(ctx.res) : 'support ' + nf(ctx.sup)}; it needs a wall to break first.`); }
+  else if (fam === 'back'){ const b = up ? Math.max(...be) : Math.min(...be), wall = up ? ctx.res : ctx.sup, beyond = up ? b > wall : b < wall;
+    const worst = up ? Math.max(...lc) : Math.min(...lp);
+    lv = beyond ? 8 : 16; R.push(`Pays only on a large move: it loses most if ${S.idx} settles at ${nf(worst)}, and profits ${up ? 'above' : 'below'} ${nf(b)}${beyond ? `, which is past ${up ? 'resistance' : 'support'} ${nf(wall)}` : ''}.`); }
+  else if (fam === 'creditN' || fam === 'nakedN'){ const outC = sc.every(k => k >= ctx.res), outP = sp.every(k => k <= ctx.sup);
+    lv = outC && outP ? 25 : outC || outP ? 14 : 8; R.push(outC && outP ? `Short strikes ${[...sp, ...sc].map(k => nf(k)).join(' / ')} sit outside the ${nf(ctx.sup)}–${nf(ctx.res)} OI range, behind the writers' walls.` : `Short strikes ${[...sp, ...sc].map(k => nf(k)).join(' / ')} sit inside the ${nf(ctx.sup)}–${nf(ctx.res)} OI range, where price is likely to travel.`); }
+  // 3. expected move (25)
+  let mv = 12;
+  if (['creditV','creditN','nakedN'].includes(fam)){ const out = be.filter(b => b <= lo || b >= hi).length; mv = be.length ? Math.round(25 * out / be.length) : 12;
+    R.push(out === be.length ? `Breakeven${be.length > 1 ? 's' : ''} ${be.map(b => nf(b)).join(' / ')} lie outside the expected range ${nf(lo)}–${nf(hi)}, so a normal move does not reach ${be.length > 1 ? 'them' : 'it'}.` : `Breakeven${be.length > 1 ? 's' : ''} ${be.map(b => nf(b)).join(' / ')} ${be.length > 1 ? 'are' : 'is'} inside the expected range ${nf(lo)}–${nf(hi)}, so a normal move can hurt.`); }
+  else if (fam === 'longVol' || fam === 'longVolSpread'){ const inn = be.filter(b => b >= F - sl && b <= F + sl).length; mv = be.length ? Math.round(25 * inn / be.length) : 12;
+    R.push(inn === be.length ? `Breakevens ${be.map(b => nf(b)).join(' / ')} are inside the 2-in-3 range, so a typical move can pay.` : `Breakevens ${be.map(b => nf(b)).join(' / ')} need more than a typical move.`); }
+  else { const b = up ? Math.max(...be) : Math.min(...be), ok = be.length && b >= lo && b <= hi; mv = ok ? 25 : 8;
+    if (be.length) R.push(ok ? `Breakeven ${nf(b)} is inside the expected range ${nf(lo)}–${nf(hi)}.` : `Breakeven ${nf(b)} is outside the expected range ${nf(lo)}–${nf(hi)}; it needs a bigger move than the market prices.`); }
+  // 4. risk (10)
+  const unl = !isFinite(st.maxLoss), rk = unl ? 0 : 10;
+  if (unl) R.push('Unlimited risk on one side, so it ranks lower.');
+  // 5. odds (10): capped-profit debits judged on reward:risk, everything else on PoP
+  const od = debit && isFinite(st.maxProfit) && st.rr != null ? Math.round(10 * Math.min(1, st.rr / 2)) : Math.round(10 * (st.pop || 0));
+  return { score: iv + lv + mv + rk + od, parts:{iv, lv, mv, rk, od}, reasons: R };
+}
+
+function vStrats(m, d){
+  const T = ENG.templates(m, S.width);
+  const cr = chainRead(m, d);
+  const views = ['Chain lean','Bullish','Bearish','Neutral','Volatile','All'];
+  const pick = S.filter === 'Chain lean' ? cr.lean : S.filter;
+  const ctx = { reg: cr.reg, sup: cr.sup, res: cr.res };
+  const items = T.filter(t => pick === 'All' || t.view === pick).map(t => {
+    if (t.missing.length) return { t, missing:true, score:-1 };
+    const legs = legsFrom(t.legs, m), st = ENG.strat(legs, m, d.lot), f = fitScore(t, st, legs, m, ctx);
+    return { t, legs, st, f, score: f.score };
+  });
+  const ranked = pick !== 'All';
+  if (ranked) items.sort((a, b) => b.score - a.score);
+  const cards = items.map((it, i) => {
+    const t = it.t;
+    if (it.missing) return `<article class="card"><div class="hd"><h3>${t.name}</h3><span class="tag ${t.view}">${t.view}</span></div><p class="note" style="margin:0">Needs ${t.missing.join(', ')}, which is not in the uploaded strikes.</p></article>`;
+    const { legs, st, f } = it, best = ranked && i === 0;
+    return `<article class="card${best ? ' best' : ''}">${best ? `<div class="bestbar">Best fit for your view · ${f.score}/100</div>` : ''}<div class="hd"><h3>${t.name}</h3>${ranked && !best ? `<span class="fit">Fit ${f.score}</span>` : `<span class="tag ${t.view}">${t.view}</span>`}</div>
+      <div class="legs">${legsTxt(legs)}</div>${sparkSVG(st, m)}
+      <div class="kv">
+        <div><span>${st.net >= 0 ? 'Net credit' : 'Net debit'}</span><span>${rupee(Math.abs(st.net))}</span></div>
+        <div><span>PoP</span><span>${st.pop == null ? '–' : pctv(st.pop)}</span></div>
+        <div><span>Max profit</span><span class="pos">${rupee(st.maxProfit)}</span></div>
+        <div><span>Max loss</span><span class="neg">${rupee(st.maxLoss)}</span></div>
+        <div><span>Breakeven</span><span>${st.be.map(x => nf(x)).join(' / ') || '–'}</span></div>
+        <div><span>Reward : risk</span><span>${st.rr == null ? '–' : nf(st.rr,2)}</span></div>
+      </div>
+      ${t.name === 'Jade Lizard' ? `<p class="note" style="margin:0">${st.pay(m.kmax * 3) >= -1e-6 ? 'No upside risk: the credit covers the call-spread width.' : 'Upside risk remains: the credit is less than the call-spread width.'}</p>` : ''}
+      ${ranked ? `<details class="why"${best ? ' open' : ''}><summary>Why ${best ? 'it ranks first' : `fit ${f.score}`}</summary><ul>${f.reasons.map(r => `<li>${r}</li>`).join('')}</ul><p class="note" style="margin:4px 0 0">Premium ${f.parts.iv}/30 · Levels ${f.parts.lv}/25 · Move ${f.parts.mv}/25 · Risk ${f.parts.rk}/10 · Odds ${f.parts.od}/10</p></details>` : ''}
+      <button class="btn small" type="button" data-open="${esc(t.name)}">Open in builder</button></article>`;
+  }).join('');
+  const leanTxt = S.filter === 'Chain lean' ? `Using the chain's lean: <b>${cr.lean}</b> (from new positions near ATM). Pick your own view from your chart work to override it.` : pick === 'All' ? 'All 17 structures, unranked.' : `Your view: <b>${pick}</b>. Structures for this view are ranked by how well they fit today's chain.`;
+  return `<div style="display:flex;flex-direction:column;gap:14px">
+    <div class="panel"><div class="panel-head"><div><h2>Strategy finder</h2><p class="note" style="margin:4px 0 0">You set the direction; the chain picks the structure. ${leanTxt}</p></div></div>
+      <div class="filters"><span class="note" style="margin-right:4px">Your view</span>${views.map(v => `<button type="button" class="pill" data-filter="${v}" aria-pressed="${S.filter === v}">${v === 'Chain lean' ? `Chain lean (${cr.lean})` : v}</button>`).join('')}
+      <label class="note" for="width" style="margin-left:10px">Spread width</label><select id="width" class="pill">${[1,2,3,4].map(w => `<option value="${w}" ${w === S.width ? 'selected' : ''}>${w} strike${w > 1 ? 's' : ''}</option>`).join('')}</select></div>
+      ${ranked ? `<p class="note" style="margin:10px 0 0">Fit score out of 100: premium level vs strategy type (30), short strikes vs support ${nf(cr.sup)} and resistance ${nf(cr.res)} (25), breakevens vs the expected range (25), defined risk (10), PoP or reward:risk (10). Prices use LTP and your lot size of ${d.lot}. Your own analysis and risk limits come first.</p>` : ''}</div>
+    <div class="cards">${cards}</div></div>`;
+}
+
+function payoffSVG(st, m){
+  const W = 800, H = 320, pl = 70, pr = 16, pt = 16, pb = 36;
+  const span = Math.max((m.sigmaMove || m.step*4) * 2.4, m.step * 6);
+  const lo = Math.min(m.F - span, Math.min(...st.ks) - m.step*2), hi = Math.max(m.F + span, Math.max(...st.ks) + m.step*2);
+  const xs = Array.from({length:161}, (_, i) => lo + (hi-lo)*i/160).concat(st.ks).sort((a,b) => a-b);
+  const ye = xs.map(st.pay), yn = xs.map(st.now);
+  let mn = Math.min(...ye, ...yn, 0), mx = Math.max(...ye, ...yn, 0); const padY = (mx-mn)*0.08 || 1; mn -= padY; mx += padY;
+  const X = x => pl + (x-lo)/(hi-lo)*(W-pl-pr), Y = y => pt + (1-(y-mn)/(mx-mn))*(H-pt-pb);
+  const pe = xs.map((x,i) => X(x).toFixed(1)+','+Y(ye[i]).toFixed(1)).join(' ');
+  const pn = xs.map((x,i) => X(x).toFixed(1)+','+Y(yn[i]).toFixed(1)).join(' ');
+  const yt = niceTicks(mn, mx, 5), xt = niceTicks(lo, hi, 6), y0 = Y(0);
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Payoff chart">
+    <defs><clipPath id="pfA"><rect x="0" y="0" width="${W}" height="${y0}"/></clipPath><clipPath id="pfB"><rect x="0" y="${y0}" width="${W}" height="${H}"/></clipPath></defs>
+    ${yt.map(v => `<line x1="${pl}" x2="${W-pr}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line-2)"/><text x="${pl-6}" y="${Y(v)+4}" text-anchor="end">${v < 0 ? '−' : ''}₹${nf(Math.abs(v))}</text>`).join('')}
+    ${xt.map(v => `<text x="${X(v)}" y="${H-12}" text-anchor="middle">${nf(v)}</text>`).join('')}
+    <polygon points="${X(xs[0])},${y0} ${pe} ${X(xs[xs.length-1])},${y0}" fill="var(--green)" opacity=".18" clip-path="url(#pfA)"/>
+    <polygon points="${X(xs[0])},${y0} ${pe} ${X(xs[xs.length-1])},${y0}" fill="var(--red)" opacity=".16" clip-path="url(#pfB)"/>
+    <line x1="${pl}" x2="${W-pr}" y1="${y0}" y2="${y0}" stroke="var(--muted)"/>
+    <polyline points="${pn}" fill="none" stroke="var(--orange)" stroke-width="1.8" stroke-dasharray="6 4"/>
+    <polyline points="${pe}" fill="none" stroke="var(--ink)" stroke-width="2.2"/>
+    <line x1="${X(m.F)}" x2="${X(m.F)}" y1="${pt}" y2="${H-pb}" stroke="var(--muted)" stroke-dasharray="2 3"/>
+    <text x="${X(m.F)+4}" y="${pt+11}" class="lbl">F ${nf(m.F)}</text>
+    ${st.be.filter(b => b > lo && b < hi).map(b => `<circle cx="${X(b)}" cy="${y0}" r="4" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.6"/><text x="${X(b)}" y="${y0-9}" text-anchor="middle" class="lbl">${nf(b)}</text>`).join('')}
+  </svg>`;
+}
+function vBuilder(m, d){
+  const ks = m.rows.map(r => r.strike);
+  const legRows = d.legs.map((l, i) => `<tr>
+    <td class="l"><span class="sw" role="group" aria-label="Buy or sell"><button type="button" class="B ${l.side === 'B' ? 'on' : ''}" data-leg="${i}" data-set="side" data-val="B">B</button><button type="button" class="S ${l.side === 'S' ? 'on' : ''}" data-leg="${i}" data-set="side" data-val="S">S</button></span></td>
+    <td class="l"><select id="lt${i}" data-leg="${i}" data-set="type" aria-label="Option type"><option ${l.type === 'CE' ? 'selected' : ''}>CE</option><option ${l.type === 'PE' ? 'selected' : ''}>PE</option></select></td>
+    <td class="l"><select id="lk${i}" data-leg="${i}" data-set="K" aria-label="Strike">${ks.map(k => `<option value="${k}" ${k === l.K ? 'selected' : ''}>${nf(k)}</option>`).join('')}</select></td>
+    <td class="l"><input id="ll${i}" type="number" min="1" step="1" value="${l.lots}" data-leg="${i}" data-set="lots" aria-label="Lots" style="width:60px"></td>
+    <td class="l"><input id="lp${i}" type="number" min="0" step="0.05" value="${l.prem}" data-leg="${i}" data-set="prem" aria-label="Entry premium"></td>
+    <td>${pctv(l.iv,2)}</td>
+    <td><button class="btn small" type="button" data-del="${i}" aria-label="Remove leg">Remove</button></td></tr>`).join('');
+  const st = d.legs.length ? ENG.strat(d.legs, m, d.lot) : null;
+  const sum = st ? `<div class="metrics" style="margin-top:14px">
+      <div class="metric"><span class="k">${st.net >= 0 ? 'Net credit' : 'Net debit'}</span><span class="v">${rupee(Math.abs(st.net))}</span><span class="s">${d.legs.reduce((a,l) => a + l.lots, 0)} lots × ${d.lot}</span></div>
+      <div class="metric"><span class="k">Max profit</span><span class="v pe">${rupee(st.maxProfit)}</span></div>
+      <div class="metric"><span class="k">Max loss</span><span class="v ce">${rupee(st.maxLoss)}</span></div>
+      <div class="metric"><span class="k">Breakeven</span><span class="v">${st.be.map(x => nf(x,1)).join(' / ') || '–'}</span></div>
+      <div class="metric"><span class="k">Probability of profit</span><span class="v">${st.pop == null ? '–' : pctv(st.pop)}</span><span class="s">at expiry, ATM IV ${pctv(m.atmIV,2)}</span></div>
+      <div class="metric"><span class="k">Reward : risk</span><span class="v">${st.rr == null ? '–' : nf(st.rr,2)}</span></div>
+      <div class="metric"><span class="k">Net delta</span><span class="v">${nf(st.g.delta,1)}</span><span class="s">₹ per 1-pt move</span></div>
+      <div class="metric"><span class="k">Net theta</span><span class="v ${cls(st.g.theta)}">${rupee(st.g.theta)}</span><span class="s">per day</span></div>
+      <div class="metric"><span class="k">Net vega</span><span class="v">${rupee(st.g.vega)}</span><span class="s">per 1% IV</span></div>
+      <div class="metric"><span class="k">Net gamma</span><span class="v">${nf(st.g.gamma,3)}</span><span class="s">delta change per pt</span></div>
+    </div>` : '';
+  return `<div style="display:flex;flex-direction:column;gap:14px">
+    <div class="panel"><div class="panel-head"><h2>Legs</h2><div class="actions"><button class="btn small" type="button" data-act="add">Add leg</button><button class="btn small" type="button" data-act="reset">Clear legs</button><button class="btn small primary" type="button" data-act="track">${getPos(S.idx) ? 'Track this position (replaces current)' : 'Track this position'}</button></div></div>
+    ${d.legs.length ? `<div class="tbl-wrap"><table class="legtbl"><thead><tr><th class="l">Side</th><th class="l">Type</th><th class="l">Strike</th><th class="l">Lots</th><th class="l">Entry premium</th><th>Engine IV</th><th></th></tr></thead><tbody>${legRows}</tbody></table></div>
+      <p class="note" style="margin:8px 0 0">Entry premium starts at the file's LTP. Edit it to your actual fill.</p>` : '<p class="note">No legs yet. Add a leg or open a structure from the Strategies tab.</p>'}
+    ${sum}</div>
+    ${st ? `<div class="panel"><div class="panel-head"><h2>Payoff</h2><div class="legend"><span><i style="background:var(--ink)"></i>At expiry</span><span><i style="background:var(--orange)"></i>Today (T+0, Black-76)</span><span>○ breakeven</span></div></div>${payoffSVG(st, m)}</div>` : ''}
+    ${st ? explainHTML(st, d.legs, m, d) : ''}
+  </div>`;
+}
+
+/* ---------- explain this trade ---------- */
+function explainHTML(st, legsIn, m, d){
+  const ix = S.idx, lot = d.lot, F = m.F, sm = m.sigmaMove || m.straddle, legs = st.legs;
+  const r = x => rupee(x), N = (x, dp=0) => nf(x, dp);
+  const qty = l => l.lots * lot;
+  // name by matching a library template
+  const sig = ls => ls.map(l => `${l.side}${l.type}${l.K}x${l.lots}`).sort().join('|');
+  const tpl = ENG.templates(m, S.width).find(t => sig(t.legs.map(x => ({...x, lots: x.lots || 1}))) === sig(legsIn));
+  const name = tpl ? tpl.name : `custom ${legsIn.length}-leg position`;
+  const debit = st.net < 0;
+  // levels where extremes occur
+  const cands = [0, ...st.ks, st.ks[st.ks.length-1] * 2];
+  const zone = target => {
+    const hit = cands.map((k, i) => Math.abs(st.pay(k) - target) < 0.5 ? i : -1).filter(i => i >= 0), last = cands.length - 1, groups = [];
+    hit.forEach(i => { const g = groups[groups.length-1]; if (g && g[g.length-1] === i - 1) g.push(i); else groups.push([i]); });
+    const parts = groups.map(g => { const a = g[0], b = g[g.length-1];
+      if (a === 0 && b === last) return { txt:'at any level', lo:-Infinity, hi:Infinity };
+      if (b === last) return { txt:`at or above ${N(cands[Math.max(a, 1)])}`, lo:cands[Math.max(a, 1)], hi:Infinity };
+      if (a === 0) return { txt:`at or below ${N(cands[Math.min(b, last-1)])}`, lo:-Infinity, hi:cands[Math.min(b, last-1)] };
+      return a === b ? { txt:`at ${N(cands[a])}`, lo:cands[a], hi:cands[a] } : { txt:`between ${N(cands[a])} and ${N(cands[b])}`, lo:cands[a], hi:cands[b] }; });
+    return { txt: parts.map(x => x.txt).join(' or '), parts };
+  };
+  const zoneDist = z => Math.min(...z.parts.map(x => F >= x.lo && F <= x.hi ? 0 : Math.min(Math.abs(F - x.lo), Math.abs(F - x.hi))));
+  const wz = isFinite(st.maxLoss) ? zone(st.maxLoss) : null, bz = isFinite(st.maxProfit) ? zone(st.maxProfit) : null;
+  const up = st.pay(F + sm), dn = st.pay(F - sm), flat = st.pay(F);
+  const shape = up > 0 && dn > 0 && flat <= 0 ? `profits from a big move either way and loses if ${ix} stays put`
+    : flat > 0 && up <= flat && dn <= flat ? `profits most if ${ix} stays near ${N(F)} and loses on a big move`
+    : up > dn ? `profits if ${ix} rises and loses if it falls` : `profits if ${ix} falls and loses if it rises`;
+  const legLine = l => {
+    const amt = qty(l) * l.prem, be = l.call ? l.K + l.prem : l.K - l.prem;
+    if (l.side === 'B') return `<b>Buy ${l.lots > 1 ? l.lots + ' lots' : '1 lot'} ${N(l.K)} ${l.type} at ${N(l.prem,2)}:</b> you pay ₹${N(amt)} for the right to gain if ${ix} ends ${l.call ? 'above' : 'below'} ${N(l.K)}. On its own this leg profits beyond ${N(be,2)}, and the most it can lose is the ₹${N(amt)} paid.`;
+    return `<b>Sell ${l.lots > 1 ? l.lots + ' lots' : '1 lot'} ${N(l.K)} ${l.type} at ${N(l.prem,2)}:</b> you receive ₹${N(amt)} and take on the obligation. On its own this leg keeps the premium if ${ix} ends ${l.call ? 'below' : 'above'} ${N(l.K)}, and starts losing ${l.call ? 'above' : 'below'} ${N(be,2)}.`;
+  };
+  const g = st.g;
+  const legDelta = legs.map(l => { const x = ENG.greeks(F, l.K, m.T, l.iv || m.atmIV, l.call); return { l, d: x ? l.sg * qty(l) * x.delta : 0 }; }).sort((a, b) => Math.abs(b.d) - Math.abs(a.d));
+  const nearT = 1/365, gNear = legs.reduce((a, l) => { const x = ENG.greeks(F, l.K, nearT, l.iv || m.atmIV, l.call); return a + (x ? l.sg * qty(l) * x.theta : 0); }, 0);
+  const dte = m.T * 365, half = Math.max(m.T - dte/2/365, 0);
+  const plHalf = st.now(F) - 0, nowPL = legs.reduce((a, l) => a + l.sg * qty(l) * (ENG.price(F, l.K, m.T, l.iv || m.atmIV, l.call) - l.prem), 0);
+  const halfPL = legs.reduce((a, l) => a + l.sg * qty(l) * (ENG.price(F, l.K, half, l.iv || m.atmIV, l.call) - l.prem), 0);
+  const tomorrow = legs.reduce((a, l) => a + l.sg * qty(l) * (ENG.price(F, l.K, Math.max(m.T - 1/365, 0), l.iv || m.atmIV, l.call) - l.prem), 0);
+  const avgC = m.rows.reduce((a, x) => a + (x.ce.oi||0), 0) / m.rows.length, avgP = m.rows.reduce((a, x) => a + (x.pe.oi||0), 0) / m.rows.length;
+  const cr = chainRead(m, d);
+  let fitTxt;
+  if (tpl && !tpl.missing.length){ const f = fitScore(tpl, st, legs.map(l => ({...l})), m, { reg: cr.reg, sup: cr.sup, res: cr.res }); fitTxt = `<p>Fit score for a ${tpl.view.toLowerCase()} view: <b>${f.score}/100</b>.</p><ul>${f.reasons.map(x => `<li>${x}</li>`).join('')}</ul>`; }
+  else fitTxt = `<p>This is a custom structure, so it has no library fit score. Against today's levels: support ${N(cr.sup)}, resistance ${N(cr.res)}, expected range ${N(F - m.straddle)}–${N(F + m.straddle)}. ${legs.filter(l => l.side === 'S').map(l => `Short ${N(l.K)} ${l.type} is ${l.call ? (l.K >= cr.res ? 'at or above resistance' : 'below resistance') : (l.K <= cr.sup ? 'at or below support' : 'above support')}.`).join(' ')}</p>`;
+  const sizeRef = isFinite(st.maxLoss) ? Math.abs(st.maxLoss) : Math.abs(Math.min(st.pay(F - 2*sm), st.pay(F + 2*sm), 0));
+  const mult = sizeRef > 0 ? Math.floor(SIZ.risk / sizeRef) : 0;
+  const ivDrop = g.vega * -3;
+  const worst2 = Math.min(st.pay(F - 2*sm), st.pay(F + 2*sm));
+  const Q = [
+    ['The basics', [
+      ['What am I trading?', `<p>A <b>${name}</b> on ${ix}, expiry ${dateTxt(d.expiry)}: ${legsTxt(legsIn)}. In plain terms, it ${shape}.</p>`],
+      ['What does each leg do?', legs.map(l => `<p>${legLine(l)}</p>`).join('')],
+      ['How much do I pay or receive upfront?', `<p>${debit ? `You <b>pay ₹${N(-st.net)}</b> net` : `You <b>receive ₹${N(st.net)}</b> net`} (${legsIn.reduce((a, l) => a + l.lots, 0)} lots of ${lot}).${debit ? ' This is cash out of your account.' : ' Short legs also need margin, which your broker calculates; the file cannot.'}</p>`],
+      ["What's the most I can make?", `<p>${isFinite(st.maxProfit) ? bz.parts.every(x => x.hi === 0) ? `Profit keeps growing the further ${ix} falls. The figure of <b>${r(st.maxProfit)}</b> is only the theoretical case of ${ix} going to zero.` : `<b>${r(st.maxProfit)}</b>, if ${ix} ends ${bz.txt} on expiry${zoneDist(bz) ? `, ${N(zoneDist(bz))} points from today's ${N(F)}` : ` (today's ${N(F)} is already in that zone)`}.` : `<b>Unlimited</b>: profit keeps growing the further ${ix} moves ${st.pay(st.ks[st.ks.length-1]*2) > 0 ? 'up' : 'down'}.${st.pay(st.ks[st.ks.length-1]*2) > 0 && st.pay(0) > 0 ? ` It also profits on a large fall, up to ${r(st.pay(0))} in the extreme case of ${ix} going to zero.` : ''}`}</p>`],
+      ["What's the most I can lose?", `<p>${isFinite(st.maxLoss) ? `<b>${r(st.maxLoss)}</b>, if ${ix} ends ${wz.txt} on expiry. ${zoneDist(wz) ? `${wz.parts.length > 1 ? 'The nearest of these is' : 'That is'} ${N(zoneDist(wz))} points from today's ${N(F)}${zoneDist(wz) / sm >= 0.1 ? ` (${N(zoneDist(wz) / sm, 1)} expected moves)` : ''}.` : `Today's ${N(F)} is already in that zone, so ${ix} has to move for this to improve.`}` : `<b>Unlimited.</b> At least one short option is uncovered. A 2σ move (±${N(2*sm)} points) by expiry would cost ${r(worst2)}.`}</p>`],
+      ['Where do I start making money?', st.be.length ? `<p>At expiry, the breakeven${st.be.length > 1 ? 's are' : ' is'} ${st.be.map(b => `<b>${N(b,1)}</b> (${sgn(b - F, v => N(v))} points from now)`).join(' and ')}.</p>` : '<p>This position has no breakeven within the loaded range.</p>'],
+      ["What if " + ix + " doesn't move at all?", `<p>If ${ix} stays at ${N(F)}: tomorrow the position is at about <b>${r(tomorrow)}</b>, and at expiry it settles at <b>${r(flat)}</b>.</p>`]
+    ]],
+    ['Fit and risk type', [
+      ['Does it fit today\'s chain?', fitTxt],
+      ['Is the risk defined or unlimited?', `<p>${isFinite(st.maxLoss) ? `<b>Defined.</b> The worst case is known in advance: ${r(st.maxLoss)}.` : '<b>Unlimited.</b> Losses can exceed any fixed amount on a large move. Size it on a stress loss, not on max loss.'}</p>`]
+    ]],
+    ['The Greeks, with your numbers', [
+      ['Delta: how much does a move in ' + ix + ' change my P&L?', `<p>Net delta is <b>${N(g.delta,1)}</b>: a 100-point rise changes P&amp;L by about <b>${r(g.delta * 100)}</b> today${Math.abs(g.delta) < 5 ? ', so the position is close to direction-neutral' : ''}.</p>`],
+      ['Gamma: does that change as ' + ix + ' moves?', `<p>Net gamma is <b>${N(g.gamma,3)}</b>: after a 100-point move, delta shifts by about ${N(g.gamma * 100,1)}. ${g.gamma > 0 ? 'Positive gamma means moves help you more the bigger they get.' : g.gamma < 0 ? 'Negative gamma means big moves hurt more than small ones.' : ''}</p>`],
+      ['Theta: what do I gain or lose each day?', `<p>Net theta is <b>${r(g.theta)} per day</b> at today's level. ${g.theta < 0 ? 'Time works against you: each quiet day costs this much.' : 'Time works for you: each quiet day adds about this much.'}</p>`],
+      ['Vega: what if IV changes?', `<p>Net vega is <b>${r(g.vega)} per IV point</b>. If IV falls 3 points, P&amp;L changes by about ${r(ivDrop)}; if it rises 3 points, by about ${r(-ivDrop)}.</p>`],
+      ['Which leg drives most of the exposure?', `<p>${legDelta[0] ? `<b>${legDelta[0].l.side === 'B' ? 'Buy' : 'Sell'} ${N(legDelta[0].l.K)} ${legDelta[0].l.type}</b> carries the largest delta (${N(legDelta[0].d,1)}). Moves in that strike's price matter most for this position.` : ''}</p>`]
+    ]],
+    ['Time and decay', [
+      ['How many days are left, and why does it matter?', `<p><b>${N(dte, Math.abs(dte - Math.round(dte)) < 0.05 ? 0 : 1)} days</b> to expiry. Fewer days means less time for ${ix} to move and faster decay of option value.</p>`],
+      ['What happens as expiry approaches if ' + ix + ' stays flat?', `<p>With ${ix} at ${N(F)} and IV unchanged: today ${r(nowPL)}, halfway to expiry about ${r(halfPL)}, at expiry ${r(flat)}.</p>`],
+      ['Does decay stay constant or speed up?', `<p>It speeds up. Theta is ${r(g.theta)} a day now; with one day left at the same level it would be about <b>${r(gNear)} a day</b>. The Position tab shows the full day-by-day path.</p>`]
+    ]],
+    ['Risk', [
+      ['What could go wrong?', `<p>A 2σ move by expiry (±${N(2*sm)} points, roughly a 1-in-20 outcome either side) would leave the position at ${r(worst2)}. A 3-point fall in IV would change it by about ${r(ivDrop)} today. Gaps around events can be larger than the model expects.</p>`],
+      ['What is the reward-to-risk?', `<p>${st.rr != null ? `<b>${N(st.rr,2)} : 1</b>: you stand to make ${r(st.maxProfit)} for ${r(-st.maxLoss)} at risk.` : isFinite(st.maxLoss) ? 'Reward is unlimited against a defined risk of ' + r(st.maxLoss) + '.' : 'Not defined: the loss side is unlimited.'}</p>`],
+      ['What is the chance of ending in profit?', `<p>About <b>${st.pop == null ? '–' : pctv(st.pop)}</b> at expiry, from a lognormal model at ATM IV ${pctv(m.atmIV,2)}. It is a model estimate, not a guarantee.</p>`]
+    ]],
+    ['Sizing and execution', [
+      ['How many lots fit my risk budget?', `<p>With ₹${N(SIZ.risk)} at risk (set in the Position tab), ${sizeRef > 0 ? (mult >= 1 ? `<b>${mult}×</b> this build fits; 1× risks ₹${N(sizeRef)}${isFinite(st.maxLoss) ? '' : ' on a 2σ move'}.` : `even 1× exceeds it: one copy risks ₹${N(sizeRef)}.`) : 'sizing by loss does not apply.'}</p>`],
+      ['How liquid are my strikes?', legs.map(l => { const rw = row(m, l.K), o = rw ? rw[l.call ? 'ce' : 'pe'] : null, avg = l.call ? avgC : avgP; return `<p>${N(l.K)} ${l.type}: OI ${lakh(o && o.oi)}, volume ${lakh(o && o.vol)} · ${o && o.oi >= avg ? 'above' : 'below'} the chain average OI${o && o.oi < avg * 0.4 ? ', so fills may be harder' : ''}.</p>`; }).join('')],
+      ['What about slippage with this many legs?', `<p>${legs.length} leg${legs.length > 1 ? 's' : ''}: each one crosses a bid-ask spread on entry and exit, so costs add up with every leg. The file has no bid/ask prices, so the tool cannot measure it; check the spreads in your broker before placing.</p>`]
+    ]]
+  ];
+  let n = 0;
+  return `<div class="panel explain"><div class="panel-head"><div><h2>Explain this trade</h2><p class="note" style="margin:4px 0 0">Plain answers about the position built above, using your numbers. Descriptive only, not advice.</p></div></div>
+    ${Q.map(([title, qs]) => `<h3 class="rsec">${title}</h3>${qs.map(([q, a]) => `<details class="qa"><summary><span class="qn">${++n}</span>${q}</summary><div class="qa-a">${a}</div></details>`).join('')}`).join('')}</div>`;
+}
+
+/* ---------- position: tracking, what-if, gap check, sizing, payoff table, decay path ---------- */
+const posKey = i => 'pos.' + i;
+function getPos(i){ const p = store.get(posKey(i)); return p && Array.isArray(p.legs) && p.legs.length ? p : null; }
+function setPos(i, p){ store.set(posKey(i), p); }
+const SIZ = { risk: +(store.get('risk') || 25000) };
+const WI = { spot:null, days:0, ivd:0, key:'', base: store.get('wibase') || 'file' };
+const sgnL = l => l.side === 'B' ? 1 : -1;
+function posLegs(p, m){
+  return p.legs.map(l => { const r = row(m, l.K), o = r ? r[l.type === 'CE' ? 'ce' : 'pe'] : null;
+    return { ...l, now: o && o.ltp > 0 ? o.ltp : null, iv: (o && o.eiv) || l.ivEntry || m.atmIV, prem: l.entry }; });
+}
+const legVal = (l, S2, Tl, ivd) => ENG.price(S2, l.K, Math.max(Tl, 0), Math.max(0.005, l.iv + ivd/100), l.type === 'CE');
+const posPL = (L, lot, S2, Tl, ivd) => L.reduce((a, l) => a + sgnL(l) * l.lots * lot * (legVal(l, S2, Tl, ivd) - l.entry), 0);
+const normCdf = x => ENG.ncdf(x);
+
+function posMTM(p, m, lot){ return posLegs(p, m).reduce((a, l) => a + (l.now == null ? 0 : sgnL(l) * l.lots * lot * (l.now - l.entry)), 0); }
+function logPosSnap(i, d, m){
+  const p = getPos(i); if (!p || p.expiry !== d.expiry) return;
+  const h = (p.hist || []).filter(x => x.manual || x.asof !== d.asof);
+  h.push({ asof: d.asof, F: m.F, pl: posMTM(p, m, d.lot) });
+  h.sort((a, b) => a.asof < b.asof ? -1 : 1); p.hist = h.slice(-200); setPos(i, p);
+}
+function posUploader(p, d){
+  return `<div class="panel upd"><div class="panel-head" style="margin:0"><div><h2>Update prices</h2>
+      <p class="note" style="margin:4px 0 0">Load a newer export of the ${esc(dateTxt(p.expiry))} ${S.idx} chain (one file or both providers). It replaces the current ${S.idx} files and updates the P&amp;L below. Set the time the export was taken first: time to expiry depends on it.</p></div></div>
+    <div class="updrow">
+      <div class="field"><label for="posAsof">Export taken at</label><input type="datetime-local" id="posAsof" value="${localDT(new Date())}"></div>
+      <label class="btn primary" for="posFile">Load newer CSV</label><input type="file" id="posFile" accept=".csv,text/csv" multiple hidden>
+      <span class="note">or drop the file anywhere on this tab</span>
+    </div></div>`;
+}
+function posHistory(p, lot){
+  const h = p.hist || []; if (h.length < 2) return '';
+  const W = 760, H = 150, pl = 70, pr = 14, pt = 12, pb = 26;
+  let mn = Math.min(...h.map(x => x.pl), 0), mx = Math.max(...h.map(x => x.pl), 0); const pd = (mx - mn) * 0.12 || 1; mn -= pd; mx += pd;
+  const X = i => pl + i / (h.length - 1) * (W - pl - pr), Y = v => pt + (1 - (v - mn) / (mx - mn)) * (H - pt - pb);
+  const yt = niceTicks(mn, mx, 3);
+  const tm = x => new Date(x.asof).toLocaleString('en-IN', {day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit', hour12:false});
+  return `<h3 class="rsec" style="margin-top:14px">P&amp;L history</h3>
+    <svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="P&L across uploads">
+      ${yt.map(v => `<line x1="${pl}" x2="${W-pr}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line-2)"/><text x="${pl-6}" y="${Y(v)+4}" text-anchor="end">${v < 0 ? '−' : ''}₹${nf(Math.abs(v))}</text>`).join('')}
+      <line x1="${pl}" x2="${W-pr}" y1="${Y(0)}" y2="${Y(0)}" stroke="var(--muted)"/>
+      <polyline fill="none" stroke="var(--ink)" stroke-width="2" points="${h.map((x, i) => X(i).toFixed(1) + ',' + Y(x.pl).toFixed(1)).join(' ')}"/>
+      ${h.map((x, i) => `<circle cx="${X(i)}" cy="${Y(x.pl)}" r="3.5" fill="${x.manual ? 'var(--surface)' : x.pl >= 0 ? 'var(--green)' : 'var(--red)'}" stroke="${x.pl >= 0 ? 'var(--green)' : 'var(--red)'}" stroke-width="1.6"/>`).join('')}
+    </svg>
+    <div class="tbl-wrap"><table><thead><tr><th class="l">Data time</th><th>${S.idx}</th><th>P&amp;L</th><th>Change</th></tr></thead><tbody>
+    ${h.map((x, i) => { const c = i ? x.pl - h[i-1].pl : null; return `<tr><td class="l">${tm(x)}${x.manual ? ' <span class="lt">manual</span>' : ''}</td><td>${nf(x.F)}</td><td class="${cls(x.pl)}">${rupee(x.pl)}</td><td class="${cls(c)}">${c == null ? '–' : rupee(c)}</td></tr>`; }).reverse().join('')}
+    </tbody></table></div>`;
+}
+function manualPL(){
+  const d = S.data[S.idx], p = getPos(S.idx); if (!p || !d.m) return null;
+  const L = posLegs(p, d.m), mp = p.manual || {}; let tot = 0;
+  L.forEach((l, i) => { const k = l.type + l.K, v = mp[k] != null ? mp[k] : (l.now != null ? l.now : l.entry), pl = sgnL(l) * l.lots * d.lot * (v - l.entry); tot += pl;
+    const c = document.getElementById('mc' + i), q = document.getElementById('mpl' + i);
+    if (c) c.textContent = sgn(v - l.entry, x => nf(x,2)); if (q){ q.textContent = rupee(pl); q.className = cls(pl); } });
+  const t = document.getElementById('mtmV'); if (t){ t.textContent = rupee(tot); t.className = 'v ' + cls(tot); }
+  return tot;
+}
+async function loadPosFiles(list){
+  const d = S.data[S.idx], p = getPos(S.idx); if (!p) return loadFiles(list);
+  const parsed = [];
+  for (const file of list){ const x = ENG.parseFile(await file.text()); if (x.error){ toast(`${file.name}: ${x.error}`); continue; } parsed.push([file.name, x]); }
+  if (!parsed.length) return;
+  const asIn = document.getElementById('posAsof');
+  d.files = {}; parsed.forEach(([n, x]) => d.files[x.fmt] = { name: n, ...x });
+  d.sample = false; d.expiry = p.expiry; d.asof = (asIn && asIn.value) || localDT(new Date());
+  recompute(); render();
+  if (d.err) toast(d.err);
+  else { const h = (getPos(S.idx).hist || []); const last = h[h.length - 1]; toast(`Prices updated to ${dateTxt(d.asof)}. P&L ${last ? rupee(last.pl) : ''}.`); }
+}
+
+function vPosition(m, d){
+  const p = getPos(S.idx);
+  if (!p) return `<div class="empty"><h2>No ${S.idx} position tracked</h2>
+    <p>Build the position in the Strategy builder, set each leg's entry premium to your actual fill, then press <b>Track this position</b>. Each later upload of the same expiry then updates its live P&L automatically, and this tab adds what-if scenarios, a next-session gap check, position sizing, a payoff table and the decay path.</p>
+    <button class="btn primary" type="button" data-act="track">Track the current builder legs</button></div>`;
+  const lot = d.lot, same = p.expiry === d.expiry;
+  if (!same) return `<div class="empty"><h2>Tracked position is for expiry ${esc(dateTxt(p.expiry))}</h2>
+    <p>The loaded ${S.idx} chain is for ${esc(dateTxt(d.expiry))}. Load a chain for ${esc(dateTxt(p.expiry))} below to update this position, or stop tracking it.</p>
+    <div class="actions"><button class="btn" type="button" data-act="untrack">${S.untrackArm ? 'Click again to stop tracking' : 'Stop tracking'}</button></div></div>${posUploader(p, d)}`;
+  const L = posLegs(p, m), T = m.T, F = m.F;
+  const st = ENG.strat(L, m, lot);
+  const manual = p.mode === 'manual', mp = p.manual || {}, mkey = l => l.type + l.K;
+  const nowOf = l => manual ? (mp[mkey(l)] != null ? mp[mkey(l)] : (l.now != null ? l.now : l.entry)) : l.now;
+  const mtm = L.reduce((a, l) => { const v = nowOf(l); return a + (v == null ? 0 : sgnL(l) * l.lots * lot * (v - l.entry)); }, 0);
+  const missing = manual ? [] : L.filter(l => l.now == null);
+  const sameData = !manual && p.openedAt === d.asof;
+  // ---- 1. tracking
+  const legRows = L.map((l, i) => { const v = nowOf(l), pl = v == null ? null : sgnL(l) * l.lots * lot * (v - l.entry);
+    const nowCell = manual ? `<input type="number" class="mprice" id="mp${i}" data-mp="${mkey(l)}" min="0" step="0.05" value="${v}" aria-label="Current price ${nf(l.K)} ${l.type}">` : (v == null ? '–' : nf(v,2));
+    return `<tr><td class="l"><span class="${l.side === 'B' ? 'pos' : 'neg'}"><b>${l.side === 'B' ? 'Buy' : 'Sell'}</b></span> ${nf(l.K)} ${l.type}</td><td>${l.lots}</td><td>${nf(l.entry,2)}</td><td>${nowCell}</td><td id="mc${i}">${v == null ? '–' : sgn(v - l.entry, x => nf(x,2))}</td><td id="mpl${i}" class="${cls(pl)}">${pl == null ? '–' : rupee(pl)}</td><td>${manual ? (l.now == null ? '–' : nf(l.now,2)) : pctv(l.iv,2)}</td></tr>`; }).join('');
+  const src = manual ? `prices entered by you${p.manualAt ? ` · last edited ${esc(dateTxt(p.manualAt))}` : ''}` : `prices from data at ${esc(dateTxt(d.asof))}`;
+  const track = `<div class="panel"><div class="panel-head"><div><h2>Live P&amp;L</h2><p class="note" style="margin:4px 0 0">Tracked since ${esc(dateTxt(p.openedAt))} · ${src} · lot size ${lot}</p></div>
+      <div class="actions"><button class="btn small" type="button" data-act="track">Re-track from builder</button><button class="btn small" type="button" data-act="untrack">${S.untrackArm ? 'Click again to stop tracking' : 'Stop tracking'}</button></div></div>
+    <div class="filters" style="margin-bottom:12px"><span class="note" style="margin-right:4px">Prices from</span><button type="button" class="pill" data-act="pmode" data-val="file" aria-pressed="${!manual}">Latest file</button><button type="button" class="pill" data-act="pmode" data-val="manual" aria-pressed="${manual}">Manual entry</button></div>
+    <div class="metrics" style="grid-template-columns:repeat(4,minmax(0,1fr))">
+      <div class="metric"><span class="k">P&amp;L now</span><span class="v ${cls(mtm)}" id="mtmV">${rupee(mtm)}</span><span class="s">${manual ? 'from your prices' : sameData ? 'same data as entry' : 'at latest upload'}</span></div>
+      <div class="metric"><span class="k">${st.net >= 0 ? 'Credit at entry' : 'Debit at entry'}</span><span class="v">${rupee(Math.abs(st.net))}</span></div>
+      <div class="metric"><span class="k">Max profit / loss</span><span class="v" style="font-size:15px">${rupee(st.maxProfit)} / ${rupee(st.maxLoss)}</span><span class="s">at expiry, from entry prices</span></div>
+      <div class="metric"><span class="k">PoP from here</span><span class="v">${st.pop == null ? '–' : pctv(st.pop)}</span><span class="s">breakeven ${st.be.map(x => nf(x)).join(' / ') || '–'}</span></div>
+    </div>
+    <div class="tbl-wrap" style="margin-top:12px"><table><thead><tr><th class="l">Leg</th><th>Lots</th><th>Entry</th><th>${manual ? 'Now (type price)' : 'Now'}</th><th>Change</th><th>P&amp;L</th><th>${manual ? 'Last file LTP' : 'IV now'}</th></tr></thead><tbody>${legRows}</tbody></table></div>
+    ${manual ? `<div class="updrow"><div class="field"><label for="manSpot">${S.idx} level now (optional)</label><input type="number" id="manSpot" step="0.05" min="0" value="${p.manualSpot != null ? p.manualSpot : ''}" placeholder="${nf(F)}"></div>
+      <button class="btn small primary" type="button" data-act="logmanual">Log to history</button>
+      <button class="btn small" type="button" data-act="resetmanual">Reset to file prices</button>
+      <span class="note">Type each leg's current price from your broker. P&amp;L updates as you type. Log it to add a point to the history.</span></div>
+      <p class="note" style="margin:8px 0 0">What-if, gap check, payoff table and decay below still use the last loaded file. Load a newer CSV to move those too.</p>` : ''}
+    ${sameData ? `<p class="note" style="margin:8px 0 0">The loaded data is the data you tracked from, so P&amp;L only reflects any difference between your fills and the file's LTP. Use <b>Load newer CSV</b> above with a later export, or switch to <b>Manual entry</b> and type current prices.</p>` : ''}
+    ${posHistory(p, lot)}
+    ${(p.hist || []).length ? `<div class="actions" style="margin-top:8px"><button class="btn small" type="button" data-act="clearhist">${S.armHist ? 'Click again to clear the history' : 'Clear P&amp;L history'}</button></div>` : ''}
+    ${missing.length ? `<p class="note" style="margin:8px 0 0">No price in this file for ${missing.map(l => nf(l.K) + ' ' + l.type).join(', ')}; ${missing.length > 1 ? 'those legs are' : 'that leg is'} left out of P&amp;L now. Switch to Manual entry to type it.</p>` : ''}
+  </div>`;
+  // ---- 2. what-if
+  const key = S.idx + p.openedAt + d.asof;
+  const wb = wiBase(p, d, m);
+  if (WI.key !== key + wb.kind){ WI.key = key + wb.kind; WI.spot = Math.round(wb.S0); WI.days = 0; WI.ivd = 0; }
+  const span = Math.max((m.sigmaMove || m.step*4) * 2.5, m.step * 6), dte = wb.T0 * 365;
+  const smin = Math.round((wb.S0 - span) / 5) * 5, smax = Math.round((wb.S0 + span) / 5) * 5, dmax = Math.max(0, Math.floor(dte));
+  const hasManual = p.manual && Object.keys(p.manual).length;
+  const whatif = `<div class="panel"><div class="panel-head"><div><h2>What-if</h2><p class="note" style="margin:4px 0 0">Every leg fully repriced with Black-76 at the chosen ${S.idx} level, days forward and IV change. Drag the sliders or type exact numbers.</p></div></div>
+    <div class="filters" style="margin-bottom:12px"><span class="note" style="margin-right:4px">Base</span><button type="button" class="pill" data-act="wibase" data-val="file" aria-pressed="${WI.base !== 'manual'}">Last file</button><button type="button" class="pill" data-act="wibase" data-val="manual" aria-pressed="${WI.base === 'manual'}">My live prices</button></div>
+    ${wb.msg ? `<p class="note" style="margin:0 0 10px">${wb.msg}</p>` : ''}
+    <div class="wigrid">
+      <div class="field"><label for="wiSpotN">${S.idx} level <b id="wiSpotV" class="rnum"></b></label><div class="wipair"><input type="range" id="wiSpot" min="${smin}" max="${smax}" step="5" value="${WI.spot}" aria-label="${S.idx} level slider"><input type="number" id="wiSpotN" step="1" min="1" value="${WI.spot}"></div></div>
+      <div class="field"><label for="wiDaysN">Days forward <b id="wiDaysV" class="rnum"></b></label><div class="wipair"><input type="range" id="wiDays" min="0" max="${dmax}" step="1" value="${Math.min(WI.days, dmax)}" aria-label="Days forward slider"><input type="number" id="wiDaysN" step="0.5" min="0" max="${nf(dte, 2).replace(/,/g, '')}" value="${WI.days}"></div></div>
+      <div class="field"><label for="wiIvN">IV change (pts) <b id="wiIvV" class="rnum"></b></label><div class="wipair"><input type="range" id="wiIv" min="-8" max="8" step="0.5" value="${WI.ivd}" aria-label="IV change slider"><input type="number" id="wiIvN" step="0.5" value="${WI.ivd}"></div></div>
+    </div>
+    <div id="wiOut"></div>
+    <div class="actions" style="margin-top:8px"><button class="btn small" type="button" data-act="wireset">Reset to now</button></div></div>`;
+  // ---- 3. gap check
+  const sd = F * (m.atmIV || 0) / Math.sqrt(252), sv = (m.atmIV || 0) / Math.sqrt(252), T1 = T - 1/365;
+  const gaps = [-2, -1, -0.5, 0, 0.5, 1, 2].map(k => { const g = Math.round(k * sd / 5) * 5, lvl = F + g;
+    const z = (Math.log(lvl / F) + sv*sv/2) / sv;
+    const pr = g === 0 ? null : g < 0 ? normCdf(z) : 1 - normCdf(z);
+    return { k, g, lvl, pl: posPL(L, lot, lvl, T1, 0), pr }; });
+  const gap = `<div class="panel"><div class="panel-head"><div><h2>Next-session gap check</h2><p class="note" style="margin:4px 0 0">P&amp;L if ${S.idx} opens at each level next session, including one day of time decay at today's IV. A typical day's move is ±${nf(sd)} points (${S.idx} × IV ÷ √252).</p></div></div>
+    <div class="tbl-wrap"><table><thead><tr><th class="l">Gap</th><th>${S.idx} at</th><th>P&amp;L next session</th><th>Chance of a gap this big or bigger</th></tr></thead><tbody>
+    ${gaps.map(x => `<tr class="${x.g === 0 ? 'atm0' : ''}"><td class="l">${x.g === 0 ? 'Flat open' : `${sgn(x.g, v => nf(v))} pts (${x.k > 0 ? '+' : '−'}${nf(Math.abs(x.k),1)} day-move)`}</td><td>${nf(x.lvl)}</td><td class="${cls(x.pl)}">${rupee(x.pl)}</td><td>${x.pr == null ? '–' : pctv(x.pr)}</td></tr>`).join('')}
+    </tbody></table></div><p class="note" style="margin:8px 0 0">Chance is for a gap at least that size in that direction, from a lognormal model at ATM IV. Real gaps happen more often than the model says, especially around events.</p></div>`;
+  // ---- 4. sizing
+  let ref, refTxt;
+  if (isFinite(st.maxLoss)){ ref = Math.abs(st.maxLoss); refTxt = 'max loss at expiry'; }
+  else { const sm = m.sigmaMove || sd * 3; ref = Math.abs(Math.min(st.pay(F - 2*sm), st.pay(F + 2*sm), 0)); refTxt = `loss at expiry after a 2σ move (±${nf(2*sm)} pts), because max loss is unlimited`; }
+  const mult = ref > 0 ? Math.floor(SIZ.risk / ref) : 0;
+  const lotsTxt = L.map(l => `${l.lots * Math.max(mult, 1)}× ${nf(l.K)} ${l.type}`).join(' · ');
+  const sizing = `<div class="panel"><div class="panel-head"><div><h2>Position sizing</h2><p class="note" style="margin:4px 0 0">How many copies of this exact build fit your risk budget.</p></div></div>
+    <div class="wigrid" style="grid-template-columns:minmax(0,220px) minmax(0,1fr)"><div class="field"><label for="riskAmt">Amount you are willing to lose (₹)</label><input type="number" id="riskAmt" min="0" step="1000" value="${SIZ.risk}"></div>
+    <div id="sizeOut" class="sizeout">${sizeText(mult, ref, refTxt, lotsTxt)}</div></div></div>`;
+  // ---- 5. payoff table
+  const ks = m.rows.map(r => r.strike), ci = ks.reduce((b, k, i) => Math.abs(k - F) < Math.abs(ks[b] - F) ? i : b, 0);
+  const pick = ks.slice(Math.max(0, ci - 5), ci + 6);
+  const ptab = `<div class="panel"><div class="panel-head"><div><h2>Payoff table</h2><p class="note" style="margin:4px 0 0">P&amp;L at each strike: today (current IV and time left) and at expiry.</p></div></div>
+    <div class="tbl-wrap"><table><thead><tr><th class="l">${S.idx} at</th><th>vs now</th><th>P&amp;L today</th><th>P&amp;L at expiry</th></tr></thead><tbody>
+    ${pick.map(k => { const a = posPL(L, lot, k, T, 0), e = st.pay(k); return `<tr class="${k === ks[ci] ? 'atm0' : ''}"><td class="l">${nf(k)}</td><td>${sgn(k - F, v => nf(v))}</td><td class="${cls(a)}">${rupee(a)}</td><td class="${cls(e)}">${rupee(e)}</td></tr>`; }).join('')}
+    </tbody></table></div></div>`;
+  // ---- 6. decay path
+  const path = [];
+  for (let i = 0; T - i/365 > 0.25/365; i++) path.push({ i, dt: new Date(new Date(d.asof).getTime() + i*864e5), pl: posPL(L, lot, F, T - i/365, 0) });
+  path.push({ i: -1, dt: new Date(d.expiry + 'T15:30'), pl: posPL(L, lot, F, 0, 0) });
+  path.forEach((x, i) => x.chg = i ? x.pl - path[i-1].pl : 0);
+  const decay = `<div class="panel"><div class="panel-head"><div><h2>Decay path if ${S.idx} stays at ${nf(F)}</h2><p class="note" style="margin:4px 0 0">Position P&amp;L day by day to expiry with ${S.idx} and IV unchanged, fully repriced each day. Decay is not a straight line: it speeds up near expiry.</p></div></div>
+    ${decaySVG(path)}
+    <div class="tbl-wrap" style="margin-top:8px"><table><thead><tr><th class="l">Day</th><th class="l">Date</th><th>P&amp;L</th><th>Change that day</th></tr></thead><tbody>
+    ${path.map(x => `<tr><td class="l">${x.i === 0 ? 'Now' : x.i < 0 ? 'Expiry 15:30' : '+' + x.i}</td><td class="l">${x.dt.toLocaleDateString('en-IN', {day:'2-digit', month:'short', weekday:'short'})}</td><td class="${cls(x.pl)}">${rupee(x.pl)}</td><td class="${cls(x.chg)}">${x.i !== 0 ? sgn(x.chg, v => (v < 0 ? '−₹' : '₹') + nf(Math.abs(v))) : '–'}</td></tr>`).join('')}
+    </tbody></table></div><p class="note" style="margin:8px 0 0">Calendar days, including weekends and holidays, as option prices count them.</p></div>`;
+  return `<div style="display:flex;flex-direction:column;gap:14px">${posUploader(p, d)}${track}${whatif}${gap}<div class="grid2">${sizing}${ptab}</div>${decay}</div>`;
+}
+function sizeText(mult, ref, refTxt, lotsTxt){
+  if (!(ref > 0)) return '<p style="margin:0">This build shows no loss at the reference point, so sizing by loss does not apply.</p>';
+  return mult >= 1
+    ? `<p style="margin:0"><b class="rnum" style="font-size:20px">${mult}×</b> this build fits: ${lotsTxt}.</p><p class="note" style="margin:4px 0 0">Reference loss for 1× is ₹${nf(ref)} (${refTxt}). At ${mult}×, that loss is ₹${nf(ref*mult)}.</p>`
+    : `<p style="margin:0"><b>Even 1× exceeds this amount.</b> One copy risks ₹${nf(ref)} (${refTxt}).</p>`;
+}
+function decaySVG(path){
+  const W = 760, H = 200, pl = 70, pr = 14, pt = 14, pb = 30;
+  const ys = path.map(x => x.pl); let mn = Math.min(...ys, 0), mx = Math.max(...ys, 0); const pd = (mx - mn) * 0.1 || 1; mn -= pd; mx += pd;
+  const X = i => pl + i / Math.max(1, path.length - 1) * (W - pl - pr), Y = v => pt + (1 - (v - mn) / (mx - mn)) * (H - pt - pb);
+  const yt = niceTicks(mn, mx, 4);
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Decay path">
+    ${yt.map(v => `<line x1="${pl}" x2="${W-pr}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line-2)"/><text x="${pl-6}" y="${Y(v)+4}" text-anchor="end">${v < 0 ? '−' : ''}₹${nf(Math.abs(v))}</text>`).join('')}
+    <line x1="${pl}" x2="${W-pr}" y1="${Y(0)}" y2="${Y(0)}" stroke="var(--muted)"/>
+    <polyline fill="none" stroke="var(--orange)" stroke-width="2.2" points="${path.map((x, i) => X(i).toFixed(1) + ',' + Y(x.pl).toFixed(1)).join(' ')}"/>
+    ${path.map((x, i) => `<circle cx="${X(i)}" cy="${Y(x.pl)}" r="3" fill="var(--surface)" stroke="var(--orange)" stroke-width="1.6"/><text x="${X(i)}" y="${H-10}" text-anchor="middle">${i === 0 ? 'Now' : i === path.length - 1 ? 'Exp' : '+' + i}</text>`).join('')}
+  </svg>`;
+}
+function wiBase(p, d, m){
+  const L = posLegs(p, m);
+  if (WI.base !== 'manual') return { kind:'file', S0:m.F, T0:m.T, L, asof:d.asof, msg:'' };
+  if (!(p.manual && Object.keys(p.manual).length)) return { kind:'file', S0:m.F, T0:m.T, L, asof:d.asof, msg:'To use your live prices, switch Live P&amp;L to Manual entry and type the current price of each leg. Using the last file until then.' };
+  if (!(p.manualSpot > 0)) return { kind:'file', S0:m.F, T0:m.T, L, asof:d.asof, msg:`To use your live prices, enter the current ${S.idx} level in Live P&amp;L (Manual entry). Using the last file until then.` };
+  const now = new Date(), T0 = (new Date(d.expiry + 'T15:30') - now) / (365 * 864e5);
+  if (!(T0 > 0)) return { kind:'file', S0:m.F, T0:m.T, L, asof:d.asof, msg:'Expiry has passed, so live prices cannot be repriced. Using the last file.' };
+  const S0 = p.manualSpot, ivs = [];
+  const LL = L.map(l => { const px = p.manual[l.type + l.K] != null ? p.manual[l.type + l.K] : l.now; const iv = px > 0 ? ENG.impliedVol(px, S0, l.K, T0, l.type === 'CE') : null;
+    ivs.push(`${nf(l.K)} ${l.type} ${iv ? nf(iv*100,2) + '%' : 'n/a'}`); return { ...l, iv: iv || l.iv, live: px }; });
+  return { kind:'manual', S0, T0, L: LL, asof: localDT(now), msg:`Base: your prices with ${S.idx} at ${nf(S0)}, now (${dateTxt(localDT(now))}). IV implied from your prices: ${ivs.join(' · ')}. The level you typed is used as the underlying.` };
+}
+function updateWhatIf(src){
+  const d = S.data[S.idx], m = d.m, p = getPos(S.idx), out = document.getElementById('wiOut');
+  if (!out || !p || !m) return;
+  const wb = wiBase(p, d, m), L = wb.L, lot = d.lot, g = id => document.getElementById(id);
+  if (src === 'num'){ WI.spot = +g('wiSpotN').value || wb.S0; WI.days = Math.max(0, +g('wiDaysN').value || 0); WI.ivd = +g('wiIvN').value || 0; g('wiSpot').value = WI.spot; g('wiDays').value = WI.days; g('wiIv').value = WI.ivd; }
+  else { WI.spot = +g('wiSpot').value; WI.days = +g('wiDays').value; WI.ivd = +g('wiIv').value; if (document.activeElement !== g('wiSpotN')) g('wiSpotN').value = WI.spot; if (document.activeElement !== g('wiDaysN')) g('wiDaysN').value = WI.days; if (document.activeElement !== g('wiIvN')) g('wiIvN').value = WI.ivd; }
+  const sp = WI.spot, dy = Math.min(WI.days, wb.T0 * 365), iv = WI.ivd;
+  g('wiSpotV').textContent = `(${sgn(sp - wb.S0, v => nf(v))} from base)`;
+  const dt = new Date(new Date(wb.asof).getTime() + dy * 864e5);
+  g('wiDaysV').textContent = `(${dt.toLocaleDateString('en-IN', {day:'2-digit', month:'short'})})`;
+  g('wiIvV').textContent = '';
+  const Tl = wb.T0 - dy/365;
+  const pl = posPL(L, lot, sp, Tl, iv), base = posPL(L, lot, wb.S0, wb.T0, 0);
+  out.innerHTML = `<div class="wires"><div><span class="k">Position P&amp;L in this scenario</span><span class="v ${cls(pl)}">${rupee(pl)}</span><span class="s">vs entry prices</span></div>
+    <div><span class="k">Change from base</span><span class="v ${cls(pl - base)}">${rupee(pl - base)}</span><span class="s">vs ${wb.kind === 'manual' ? 'your live prices' : 'last file'} at ${nf(wb.S0)}</span></div></div>
+    <div class="tbl-wrap" style="margin-top:8px"><table><thead><tr><th class="l">Leg</th><th>Entry</th><th>${wb.kind === 'manual' ? 'Your price' : 'File price'}</th><th>Scenario price</th><th>Leg P&amp;L</th></tr></thead><tbody>
+    ${L.map(l => { const v = legVal(l, sp, Tl, iv), lp = sgnL(l) * l.lots * lot * (v - l.entry), b0 = wb.kind === 'manual' ? l.live : l.now; return `<tr><td class="l">${l.side === 'B' ? 'Buy' : 'Sell'} ${l.lots > 1 ? l.lots + '× ' : ''}${nf(l.K)} ${l.type}</td><td>${nf(l.entry,2)}</td><td>${b0 == null ? '–' : nf(b0,2)}</td><td>${nf(v,2)}</td><td class="${cls(lp)}">${rupee(lp)}</td></tr>`; }).join('')}
+    </tbody></table></div>`;
+}
+function trackFromBuilder(d){
+  if (!d.legs || !d.legs.length){ toast('Add legs in the Strategy builder first.'); return false; }
+  const had = !!getPos(S.idx);
+  setPos(S.idx, { legs: d.legs.map(l => ({ side:l.side, type:l.type, K:l.K, lots:l.lots, entry:+l.prem, ivEntry:l.iv })), expiry: d.expiry, openedAt: d.asof });
+  WI.key = ''; if (d.m) logPosSnap(S.idx, d, d.m); toast(had ? 'Position replaced with the builder legs.' : 'Position tracked. Upload newer data of this expiry to follow it.');
+  return true;
+}
+
+/* ---------- share card ---------- */
+const DISCLAIMER = 'For educational purposes only. This is option-chain data analysis, not a recommendation to buy, sell or hold any security or derivative, and not investment advice. Simple Trade With Patience (STWP) is not a SEBI-registered investment adviser or research analyst. Derivatives trading carries a high risk of loss: as per SEBI, 9 out of 10 individual traders in equity F&O incurred net losses. Do your own research and consult a SEBI-registered adviser before trading.';
+function textReport(m, d){
+  const cr = chainRead(m, d), ix = S.idx, st = m.step;
+  const cw = row(m, m.callWall), pw = row(m, m.putWall);
+  const width = cr.res - cr.sup, ratio = width / (2 * m.straddle);
+  const L = [];
+  L.push(`📊 STWP Chain Lab · ${ix} option chain read`);
+  L.push(`Data: ${dateTxt(d.asof)} · Expiry: ${dateTxt(d.expiry)}`);
+  L.push('');
+  L.push('*Key levels*');
+  L.push(`• Resistance ${nf(cr.res)}: call writers are concentrated here (highest of the top-3 call OI strikes)`);
+  L.push(`• Support ${nf(cr.sup)}: put writers are concentrated here (lowest of the top-3 put OI strikes)`);
+  L.push(`• Above ${nf(cr.res + st)}: breakout reference · above ${nf(cr.res + 3*st)}: upside reference`);
+  L.push(`• Below ${nf(cr.sup - st)}: breakdown reference · below ${nf(cr.sup - 3*st)}: downside reference`);
+  L.push(`• Range ${nf(cr.sup)}–${nf(cr.res)}: ${nf(width)} points, ${nf(ratio,1)}× the market's expected move`);
+  L.push('');
+  L.push('*Positioning*');
+  L.push(`• ${ix} level from option prices: ${nf(m.F)}`);
+  L.push(`• PCR (OI) ${nf(m.pcrOi,2)}: ${cr.posTag.toLowerCase()} (below 0.80 call-heavy, above 1.20 put-heavy)`);
+  L.push(`• Call wall ${nf(m.callWall)} (${lakh(cw.ce.oi)} OI) · Put wall ${nf(m.putWall)} (${lakh(pw.pe.oi)} OI)`);
+  L.push(`• Max pain ${nf(m.maxPain)}: the expiry level at which option buyers as a group collect the least`);
+  if (cr.flipK) L.push(`• Gamma flip near ${nf(cr.flipK)} (estimate): above it, hedging tends to damp moves; below it, moves can speed up`);
+  L.push(`• New positions near ATM: calls ${cr.flowCE}; puts ${cr.flowPE}`);
+  L.push('');
+  L.push('*Pricing*');
+  L.push(`• Expected move ±${nf(m.straddle)} points by expiry (${nf(m.F - m.straddle)}–${nf(m.F + m.straddle)}), from the ATM straddle`);
+  L.push(`• ATM IV ${nf(m.atmIV*100,2)}%${m.skew != null ? ` · OTM puts priced ${nf(Math.abs(m.skew),1)} IV points ${m.skew >= 0 ? 'above' : 'below'} OTM calls` : ''}`);
+  L.push('');
+  L.push('*Heaviest trading*');
+  const up = cr.hv.filter(v => v.oi > 0).length;
+  L.push(`• ${cr.hv.map(v => nf(v.k)).join(' · ')}: open interest ${up === cr.hv.length ? 'rose at all of them' : up === 0 ? 'fell at all of them' : `rose at ${up} of ${cr.hv.length}`}`);
+  L.push('');
+  L.push(`⚠️ Disclaimer: ${DISCLAIMER}`);
+  L.push('');
+  L.push('– STWP · simpletradewithpatience.com');
+  return L.join('\n');
+}
+
+function vShare(m, d){
+  const rep = textReport(m, d);
+  return `<div class="panel" style="display:flex;flex-direction:column;gap:12px;margin-bottom:14px">
+    <div class="panel-head" style="margin:0"><div><h2>WhatsApp text report</h2>
+      <p class="note" style="margin:4px 0 0">Chain-level levels and positioning in plain text, with the disclaimer. No strategies and no data-provider names. Text is searchable and forwards cleanly in community groups.</p></div>
+      <div class="actions"><button class="btn primary" type="button" data-act="copytxt">Copy text report</button><a class="btn" href="https://wa.me/?text=${encodeURIComponent(rep)}" target="_blank" rel="noopener">Open in WhatsApp</a></div></div>
+    <textarea id="txtReport" readonly rows="14" style="width:100%;font:12.5px/1.5 var(--f-num);border:1px solid var(--line);border-radius:6px;background:var(--sunk);padding:10px;resize:vertical">${esc(rep)}</textarea>
+    <p class="note" style="margin:0">*Bold* markers become bold in WhatsApp. If "Open in WhatsApp" does nothing here, use Copy and paste into the group.</p>
+  </div>
+  <div class="panel share">
+    <canvas id="card" width="1080" height="1350" aria-label="Share card preview"></canvas>
+    <div style="display:flex;flex-direction:column;gap:14px;min-width:0">
+      <h2>Share card for WhatsApp</h2>
+      <p class="note" style="margin:0">A 1080 × 1350 image of the ${S.idx} chain levels with the SEBI disclaimer printed on it, sized for WhatsApp. It carries only chain-derived levels. Strategy payoffs are left off on purpose, since a strategy shown to a group can read as a recommendation.</p>
+      <div class="actions"><button class="btn primary" type="button" data-act="png">Download share card (PNG)</button><button class="btn" type="button" data-act="csv">Download chain (CSV)</button></div>
+      <p class="note" style="margin:0">The CSV holds the full merged chain with engine IV and Greeks, with the disclaimer at the top. It contains the raw data from your paid exports, so keep it for your own records rather than posting it to the group.</p>
+      <p class="disc">${esc(DISCLAIMER)}</p>
+    </div></div>
+  <div class="panel" style="margin-top:14px;display:flex;flex-direction:column;gap:12px">
+    <div class="panel-head" style="margin:0"><div><h2>Website snapshot for Graphy</h2>
+      <p class="note" style="margin:4px 0 0">A self-contained block of the ${S.idx} levels, OI chart and disclaimer, with the data built in. Plain HTML with inline styles and no scripts, so it survives Graphy's custom code block. Paste it into a Custom HTML / Embed section.</p></div>
+      <div class="actions"><button class="btn primary" type="button" data-act="copyhtml">Copy HTML</button><button class="btn" type="button" data-act="dlhtml">Download .html</button></div></div>
+    <label class="note" for="snapCode">HTML code (${nf(snapshotHTML(m, d).length)} characters)</label>
+    <textarea id="snapCode" readonly rows="5" style="width:100%;font:12px/1.4 var(--f-num);border:1px solid var(--line);border-radius:6px;background:var(--sunk);padding:8px;resize:vertical">${esc(snapshotHTML(m, d))}</textarea>
+    <p class="note" style="margin:0">Preview, exactly as it will appear on your site:</p>
+    <div style="overflow-x:auto">${snapshotHTML(m, d)}</div>
+  </div>`;
+}
+
+/* ---------- website snapshot (inline styles only, no scripts) ---------- */
+function snapshotHTML(m, d){
+  const C = { bg:'#FFFFFF', panel:'#F5F8F5', ink:'#17201B', mut:'#5C6962', line:'#D7DFD8', g:'#027B06', o:'#F99309', r:'#D8262F' };
+  const SERIF = "'Source Serif 4',Georgia,'Times New Roman',serif", SANS = "'IBM Plex Sans','Segoe UI',Arial,sans-serif", MONO = "'IBM Plex Mono',Menlo,Consolas,monospace";
+  const zs = z => z ? z.ks.map(k => nf(k)).join(' · ') : '–';
+  const tiles = [
+    ['Implied forward', nf(m.F,2), 'from put-call parity', C.ink],
+    ['ATM strike', nf(m.atm), `strike step ${nf(m.step)}`, C.ink],
+    ['ATM IV', pctv(m.atmIV,2), `${nf(m.T*365,1)} days to expiry`, C.ink],
+    ['PCR (OI)', nf(m.pcrOi,2), `PCR volume ${nf(m.pcrVol,2)}`, C.ink],
+    ['Max pain', nf(m.maxPain), `${sgn(m.maxPain - m.F, x => nf(x))} pts from forward`, C.ink],
+    ['Call OI zone', zoneTxt(m.callZone), `top 3: ${zs(m.callZone)}`, C.r],
+    ['Put OI zone', zoneTxt(m.putZone), `top 3: ${zs(m.putZone)}`, C.g],
+    ['Straddle range', `${nf(m.F - m.straddle)}–${nf(m.F + m.straddle)}`, `ATM straddle ₹${nf(m.straddle,2)}`, C.ink],
+    ['1σ range', m.sigmaMove ? `${nf(m.F - m.sigmaMove)}–${nf(m.F + m.sigmaMove)}` : '–', m.sigmaMove ? `±${nf(m.sigmaMove)} pts at ATM IV` : '', C.ink],
+    ['IV skew', m.skew == null ? '–' : sgn(m.skew, x => nf(x,2)) + ' pts', m.skew == null ? '' : `${nf(m.skewP)} PE vs ${nf(m.skewC)} CE`, C.ink]
+  ];
+  const tile = ([k, v, sub, col]) => `<div style="flex:1 1 150px;min-width:0;box-sizing:border-box;padding:12px 14px;border:1px solid ${C.line};border-radius:6px;background:${C.bg}">
+<div style="font:600 11px/1.3 ${SANS};letter-spacing:.06em;text-transform:uppercase;color:${C.mut};margin:0">${esc(k)}</div>
+<div style="font:600 19px/1.3 ${MONO};color:${col};margin:3px 0 0;word-break:break-word">${esc(v)}</div>
+<div style="font:400 12px/1.4 ${SANS};color:${C.mut};margin:2px 0 0">${esc(sub)}</div></div>`;
+  // OI chart (inline SVG, fixed palette)
+  const rows = m.rows, W = 760, H = 300, pl = 58, pr = 12, pt = 26, pb = 34;
+  const maxOi = Math.max(...rows.map(r => Math.max(r.ce.oi || 0, r.pe.oi || 0)), 1);
+  const slot = (W - pl - pr) / rows.length, bw = Math.min(slot * 0.36, 16);
+  const Y = v => pt + (1 - v / maxOi) * (H - pt - pb);
+  const yt = niceTicks(0, maxOi, 4), every = Math.ceil(rows.length / 10);
+  const fx = pl + (m.F - rows[0].strike) / ((rows[rows.length-1].strike - rows[0].strike) || 1) * (slot * (rows.length - 1)) + slot / 2;
+  const svg = `<svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block;max-width:100%;height:auto" role="img" aria-label="Open interest by strike" xmlns="http://www.w3.org/2000/svg">
+${yt.map(v => `<line x1="${pl}" x2="${W-pr}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" stroke="${C.line}" stroke-width="1"/><text x="${pl-6}" y="${(Y(v)+4).toFixed(1)}" text-anchor="end" font-family="${MONO}" font-size="11" fill="${C.mut}">${lakh(v)}</text>`).join('')}
+${rows.map((r, i) => { const xm = pl + slot*i + slot/2, hc = H - pb - Y(r.ce.oi || 0), hp = H - pb - Y(r.pe.oi || 0);
+  return `<rect x="${(xm-bw-1).toFixed(1)}" y="${Y(r.ce.oi||0).toFixed(1)}" width="${bw.toFixed(1)}" height="${hc.toFixed(1)}" fill="${C.r}"/><rect x="${(xm+1).toFixed(1)}" y="${Y(r.pe.oi||0).toFixed(1)}" width="${bw.toFixed(1)}" height="${hp.toFixed(1)}" fill="${C.g}"/>`
+    + (i % every === 0 ? `<text x="${xm.toFixed(1)}" y="${H-12}" text-anchor="middle" font-family="${MONO}" font-size="11" fill="${r.strike === m.atm ? C.ink : C.mut}" font-weight="${r.strike === m.atm ? 600 : 400}">${nf(r.strike)}</text>` : ''); }).join('')}
+<line x1="${fx.toFixed(1)}" x2="${fx.toFixed(1)}" y1="${pt-4}" y2="${H-pb}" stroke="${C.o}" stroke-width="1.5" stroke-dasharray="5 4"/>
+<text x="${fx.toFixed(1)}" y="${pt-8}" text-anchor="middle" font-family="${MONO}" font-size="11" font-weight="600" fill="${C.o}">F ${nf(m.F)}</text>
+</svg>`;
+  const key = (col, t) => `<span style="display:inline-flex;align-items:center;gap:5px;margin-right:14px"><span style="display:inline-block;width:10px;height:10px;background:${col}"></span>${t}</span>`;
+  return '<' + `!-- STWP option chain snapshot: ${S.idx}, expiry ${d.expiry}. Generated by STWP Chain Lab. --` + `>
+<div style="box-sizing:border-box;max-width:980px;margin:0 auto;padding:20px 18px;background:${C.panel};border:1px solid ${C.line};border-radius:10px;color:${C.ink};font:400 14px/1.5 ${SANS};text-align:left">
+<div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:0 0 4px">
+<span style="font:600 11px/1 ${MONO};letter-spacing:.14em;color:${C.g};border:1px solid ${C.g};padding:4px 6px;border-radius:3px">STWP</span>
+<span style="font:500 12px/1.4 ${SANS};color:${C.mut}">Simple Trade With Patience · Option chain snapshot</span></div>
+<h2 style="font:700 26px/1.25 ${SERIF};color:${C.ink};margin:8px 0 4px;padding:0">${S.idx} option chain levels</h2>
+<p style="font:400 13px/1.5 ${SANS};color:${C.mut};margin:0 0 14px">Data as of ${esc(dateTxt(d.asof))} · Expiry ${esc(dateTxt(d.expiry))} · Computed from ${m.n} strikes, ${nf(m.kmin)}–${nf(m.kmax)}</p>
+<div style="display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px">${tiles.map(tile).join('')}</div>
+<div style="background:${C.bg};border:1px solid ${C.line};border-radius:6px;padding:14px 12px 8px">
+<div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:6px;margin:0 0 6px">
+<h3 style="font:600 17px/1.3 ${SERIF};color:${C.ink};margin:0;padding:0">Open interest by strike</h3>
+<div style="font:400 12px/1.4 ${SANS};color:${C.mut}">${key(C.r,'Call OI')}${key(C.g,'Put OI')}${key(C.o,'Forward')}</div></div>
+${svg}</div>
+<div style="margin:16px 0 0;padding:12px 14px;background:${C.bg};border:1px solid ${C.line};border-radius:6px">
+<div style="font:600 11px/1.3 ${SANS};letter-spacing:.08em;text-transform:uppercase;color:${C.r};margin:0 0 4px">Disclaimer</div>
+<p style="font:400 13px/1.55 ${SANS};color:${C.ink};margin:0">${esc(DISCLAIMER)}</p></div>
+<p style="font:400 11.5px/1.5 ${SANS};color:${C.mut};margin:10px 0 0">Method: forward from put-call parity; implied volatility from Black-76 at zero interest rate; OI zones are the three strikes with the highest open interest on each side. OI in units; L = lakh. simpletradewithpatience.com</p>
+</div>`;
+}
+const cssVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+function wrapText(ctx, text, x, y, maxW, lh){
+  const words = text.split(' '); let line = '';
+  for (const w of words){ const t = line ? line + ' ' + w : w; if (ctx.measureText(t).width > maxW && line){ ctx.fillText(line, x, y); y += lh; line = w; } else line = t; }
+  if (line){ ctx.fillText(line, x, y); y += lh; } return y;
+}
+async function drawCard(){
+  const cv = document.getElementById('card'); if (!cv) return;
+  try { await document.fonts.ready; } catch(e){}
+  const d = S.data[S.idx], m = d.m, c = cv.getContext('2d');
+  const C = { bg:'#F6F8F5', ink:'#17201B', mut:'#5C6962', line:'#D7DFD8', g:'#027B06', o:'#F99309', r:'#D8262F', w:'#FFFFFF' };
+  const SERIF = '"Source Serif 4", Georgia, serif', SANS = '"IBM Plex Sans", "Segoe UI", sans-serif', MONO = '"IBM Plex Mono", Menlo, monospace';
+  c.fillStyle = C.bg; c.fillRect(0, 0, 1080, 1350);
+  const P = 64;
+  c.textBaseline = 'alphabetic';
+  c.strokeStyle = C.g; c.lineWidth = 2; c.strokeRect(P, 62, 92, 34);
+  c.fillStyle = C.g; c.font = `600 20px ${MONO}`; c.fillText('STWP', P + 17, 86);
+  c.fillStyle = C.mut; c.font = `500 20px ${SANS}`; c.fillText('Simple Trade With Patience · Option chain snapshot', P + 112, 86);
+  c.fillStyle = C.ink; c.font = `700 64px ${SERIF}`; c.fillText(`${S.idx} option chain`, P, 178);
+  c.fillStyle = C.mut; c.font = `400 22px ${SANS}`;
+  c.fillText(`Data ${dateTxt(d.asof)}   ·   Expiry ${dateTxt(d.expiry)}`, P, 220);
+  // metric grid 4 x 2
+  const tiles = [
+    ['Implied forward', nf(m.F,0), C.ink], ['ATM strike', nf(m.atm), C.ink], ['PCR (OI)', nf(m.pcrOi,2), C.ink], ['Max pain', nf(m.maxPain), C.ink],
+    ['Call OI zone', zoneTxt(m.callZone), C.r], ['Put OI zone', zoneTxt(m.putZone), C.g], ['Straddle range', `${nf(m.F - m.straddle)}–${nf(m.F + m.straddle)}`, C.ink], ['ATM IV', pctv(m.atmIV,1), C.ink]
+  ];
+  const gx = P, gy = 258, gw = 1080 - 2*P, tw = gw/4, th = 118;
+  c.fillStyle = C.w; c.fillRect(gx, gy, gw, th*2); c.strokeStyle = C.line; c.lineWidth = 1.5; c.strokeRect(gx, gy, gw, th*2);
+  tiles.forEach(([k, v, col], i) => {
+    const x = gx + (i%4)*tw, y = gy + Math.floor(i/4)*th;
+    if (i%4) { c.beginPath(); c.moveTo(x, y + 14); c.lineTo(x, y + th - 14); c.stroke(); }
+    c.fillStyle = C.mut; c.font = `500 17px ${SANS}`; c.fillText(k.toUpperCase(), x + 22, y + 40);
+    c.fillStyle = col; c.font = `600 ${v.length > 9 ? 27 : 36}px ${MONO}`; c.fillText(v, x + 22, y + 88);
+  });
+  c.beginPath(); c.moveTo(gx + 14, gy + th); c.lineTo(gx + gw - 14, gy + th); c.stroke();
+  // OI chart
+  const cy0 = 560, ch = 420, cx0 = P + 70, cw = 1080 - P - cx0;
+  c.fillStyle = C.ink; c.font = `600 30px ${SERIF}`; c.fillText('Open interest by strike', P, cy0 - 6);
+  c.font = `500 18px ${SANS}`;
+  c.fillStyle = C.r; c.fillRect(1080 - P - 300, cy0 - 22, 16, 16); c.fillStyle = C.mut; c.fillText('Call OI', 1080 - P - 276, cy0 - 8);
+  c.fillStyle = C.g; c.fillRect(1080 - P - 180, cy0 - 22, 16, 16); c.fillStyle = C.mut; c.fillText('Put OI', 1080 - P - 156, cy0 - 8);
+  const rows = m.rows, top = cy0 + 30, base = cy0 + ch - 40;
+  const maxOi = Math.max(...rows.map(r => Math.max(r.ce.oi || 0, r.pe.oi || 0)), 1);
+  const yt = niceTicks(0, maxOi, 4);
+  c.font = `400 15px ${MONO}`; c.textAlign = 'right';
+  yt.forEach(v => { const y = base - v/maxOi*(base - top); c.strokeStyle = C.line; c.lineWidth = 1; c.beginPath(); c.moveTo(cx0, y); c.lineTo(cx0 + cw, y); c.stroke(); c.fillStyle = C.mut; c.fillText(lakh(v), cx0 - 10, y + 5); });
+  const slot = cw / rows.length, bw = Math.min(slot * 0.36, 26);
+  const labelEvery = Math.ceil(rows.length / 10);
+  c.textAlign = 'center';
+  rows.forEach((r, i) => {
+    const xm = cx0 + slot*i + slot/2;
+    const hc = (r.ce.oi || 0)/maxOi*(base - top), hp = (r.pe.oi || 0)/maxOi*(base - top);
+    c.fillStyle = C.r; c.fillRect(xm - bw - 1, base - hc, bw, hc);
+    c.fillStyle = C.g; c.fillRect(xm + 1, base - hp, bw, hp);
+    if (i % labelEvery === 0){ c.fillStyle = r.strike === m.atm ? C.ink : C.mut; c.font = `${r.strike === m.atm ? 600 : 400} 15px ${MONO}`; c.fillText(nf(r.strike), xm, base + 24); }
+  });
+  const fx = cx0 + (m.F - rows[0].strike) / ((rows[rows.length-1].strike - rows[0].strike) || 1) * (slot*(rows.length-1)) + slot/2;
+  c.strokeStyle = C.o; c.lineWidth = 2; c.setLineDash([8, 6]); c.beginPath(); c.moveTo(fx, top - 6); c.lineTo(fx, base); c.stroke(); c.setLineDash([]);
+  c.fillStyle = C.o; c.font = `600 16px ${MONO}`; c.fillText(`F ${nf(m.F)}`, fx, top - 12);
+  c.textAlign = 'left';
+  // disclaimer
+  const dy = 1030;
+  c.fillStyle = C.w; c.fillRect(P, dy, 1080 - 2*P, 230); c.strokeStyle = C.line; c.lineWidth = 1.5; c.strokeRect(P, dy, 1080 - 2*P, 230);
+  c.fillStyle = C.r; c.font = `600 18px ${SANS}`; c.fillText('DISCLAIMER', P + 24, dy + 38);
+  c.fillStyle = C.ink; c.font = `400 19px ${SANS}`; wrapText(c, DISCLAIMER, P + 24, dy + 70, 1080 - 2*P - 48, 28);
+  c.fillStyle = C.mut; c.font = `500 19px ${SANS}`; c.fillText('simpletradewithpatience.com', P, 1300);
+  c.textAlign = 'right'; c.font = `400 17px ${SANS}`; c.fillText(`Levels from ${m.n} strikes, ${nf(m.kmin)}–${nf(m.kmax)}`, 1080 - P, 1300); c.textAlign = 'left';
+}
+
+/* ---------- downloads ---------- */
+let dlNS; const dlReady = (async () => { try { dlNS = window.claude && window.claude.use ? await window.claude.use('downloads') : null; } catch(e){ dlNS = null; } })();
+async function saveFile(name, data){
+  await Promise.race([dlReady, new Promise(r => setTimeout(r, 1500))]);
+  if (dlNS){
+    try { await dlNS.save({ filename: name, data }); toast('Saved ' + name); }
+    catch(e){ toast(e && e.code === 'declined' ? 'Download cancelled' : 'Download failed: ' + (e && e.message || 'unavailable here')); }
+    return;
+  }
+  const blob = data instanceof Blob ? data : new Blob([data], {type: /\.html$/.test(name) ? 'text/html' : 'text/csv'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+const stamp = d => (d.expiry || 'expiry').replace(/-/g,'') ;
+async function dlPng(){
+  await drawCard(); const cv = document.getElementById('card'); if (!cv) return;
+  const blob = await new Promise(r => cv.toBlob(r, 'image/png'));
+  saveFile(`STWP_${S.idx}_chain_${stamp(S.data[S.idx])}.png`, blob);
+}
+function dlCsv(){
+  const d = S.data[S.idx], m = d.m; const q = v => { const s = v == null ? '' : String(v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s; };
+  const r6 = v => v == null ? '' : +v.toFixed(6);
+  const out = [];
+  out.push([`STWP Chain Lab - ${S.idx}`].map(q).join(','));
+  out.push([`Disclaimer: ${DISCLAIMER}`].map(q).join(','));
+  out.push([`Data time ${d.asof}`, `Expiry ${d.expiry}`, `Forward ${nf(m.F,2)}`, `ATM IV ${pctv(m.atmIV,2)}`, `PCR OI ${nf(m.pcrOi,3)}`, `Max pain ${m.maxPain}`].map(q).join(','));
+  out.push('');
+  const f = ['ltp','oi','chgOi','vol','build','iv','eiv','delta','eDelta','eGamma','eTheta','eVega','open','high','low'];
+  const head = ['Strike'].concat(...['CE','PE'].map(s => f.map(x => `${s} ${({ltp:'LTP',oi:'OI',chgOi:'Chg OI',vol:'Volume',build:'Build-up',iv:'Provider IV %',eiv:'Engine IV %',delta:'Provider delta',eDelta:'Engine delta',eGamma:'Engine gamma',eTheta:'Engine theta/day',eVega:'Engine vega/1%',open:'Open',high:'High',low:'Low'})[x]}`)), 'File mismatch');
+  out.push(head.map(q).join(','));
+  m.rows.forEach(r => {
+    const side = o => [o.ltp, o.oi, o.chgOi, o.vol, o.build, o.iv, o.eiv == null ? '' : r6(o.eiv*100), o.delta, o.eg ? r6(o.eg.delta) : '', o.eg ? r6(o.eg.gamma) : '', o.eg ? r6(o.eg.theta) : '', o.eg ? r6(o.eg.vega) : '', o.open, o.high, o.low];
+    out.push([r.strike, ...side(r.ce), ...side(r.pe), ['ce','pe'].filter(s => r.mismatch[s]).map(s => s.toUpperCase()).join('/')].map(q).join(','));
+  });
+  saveFile(`STWP_${S.idx}_chain_${stamp(d)}.csv`, '﻿' + out.join('\r\n'));
+}
+
+/* ---------- files ---------- */
+async function loadFiles(list){
+  const d = S.data[S.idx]; let ok = 0;
+  for (const file of list){
+    const text = await file.text(); const p = ENG.parseFile(text);
+    if (p.error){ toast(`${file.name}: ${p.error}`); continue; }
+    if (d.sample){ d.files = {}; d.sample = false; d.expiry = ''; d.asof = localDT(new Date()); d.legs = null; }
+    d.files[p.fmt] = { name: file.name, ...p }; ok++;
+  }
+  if (ok){ d.legs = null; recompute(); render(); toast(`Loaded ${ok} file${ok > 1 ? 's' : ''} for ${S.idx}${d.expiry ? '' : '. Set the expiry date next.'}`); }
+}
+
+/* ---------- events ---------- */
+document.addEventListener('click', e => {
+  const t = e.target.closest('button'); if (!t) return;
+  const act = t.dataset.act;
+  if (act !== 'resetidx' && S.armReset){ S.armReset = false; if (!act) { /* fall through */ } }
+  if (act !== 'clearhist' && S.armHist) S.armHist = false;
+  if (act !== 'untrack' && S.untrackArm) S.untrackArm = false;
+  const d = S.data[S.idx];
+  if (t.dataset.idx){ S.idx = t.dataset.idx; recompute(); render(); return; }
+  if (t.dataset.view){ S.view = t.dataset.view; store.set('view', S.view); render(); return; }
+  if (t.id === 'goShare'){ S.view = 'share'; render(); return; }
+  if (t.dataset.rm){ delete d.files[t.dataset.rm]; d.legs = null; recompute(); render(); return; }
+  if (t.dataset.filter){ S.filter = t.dataset.filter; store.set('pickview', S.filter); render(); return; }
+  if (t.dataset.cmp){ const k = +t.dataset.cmp; S.cmp = S.cmp.includes(k) ? S.cmp.filter(x => x !== k) : S.cmp.length >= 6 ? S.cmp : [...S.cmp, k].sort((a,b) => a-b); if (!S.cmp.length) S.cmp = [k]; render(); return; }
+  if (t.dataset.open){ const tp = ENG.templates(d.m, S.width).find(x => x.name === t.dataset.open); d.legs = legsFrom(tp.legs, d.m); S.view = 'builder'; render(); return; }
+  if (t.dataset.del != null){ d.legs.splice(+t.dataset.del, 1); render(); return; }
+  if (t.dataset.set === 'side'){ d.legs[+t.dataset.leg].side = t.dataset.val; render(); return; }
+  const a = t.dataset.act;
+  if (a === 'add'){ d.legs.push(...legsFrom([{side:'B', type:'CE', K:d.m.atm, lots:1}], d.m)); render(); }
+  else if (a === 'reset'){ d.legs = []; render(); }
+  else if (a === 'clear'){ d.files = {}; d.sample = false; d.expiry = ''; d.legs = null; d.m = null; render(); }
+  else if (a === 'track'){ if (trackFromBuilder(d)){ S.untrackArm = false; S.view = 'position'; store.set('view', S.view); render(); } }
+  else if (a === 'untrack'){ if (S.untrackArm){ store.set(posKey(S.idx), null); S.untrackArm = false; toast('Stopped tracking.'); } else { S.untrackArm = true; } render(); }
+  else if (a === 'pmode'){ const p = getPos(S.idx); if (p){ p.mode = t.dataset.val; if (p.mode === 'manual' && !p.manual){ p.manual = {}; } setPos(S.idx, p); render(); } }
+  else if (a === 'logmanual'){ const p = getPos(S.idx), pl = manualPL(); if (p && pl != null){ const now = new Date(), at = localDT(now) + ':' + String(now.getSeconds()).padStart(2, '0'); const h = (p.hist || []).filter(x => !(x.manual && x.asof === at));
+      h.push({ asof: at, F: p.manualSpot != null ? p.manualSpot : d.m.F, pl, manual: true }); h.sort((a, b) => a.asof < b.asof ? -1 : 1); p.hist = h.slice(-200); setPos(S.idx, p); toast(`Logged ${rupee(pl)} at ${dateTxt(at)}.`); render(); } }
+  else if (a === 'resetmanual'){ const p = getPos(S.idx); if (p){ p.manual = {}; p.manualSpot = null; p.manualAt = null; setPos(S.idx, p); toast('Prices reset to the last file.'); render(); } }
+  else if (a === 'clearhist'){ const p = getPos(S.idx); if (S.armHist && p){ p.hist = []; setPos(S.idx, p); S.armHist = false; toast('P&L history cleared.'); } else S.armHist = true; render(); }
+  else if (a === 'resetidx'){ if (S.armReset){ d.files = {}; d.sample = false; d.expiry = ''; d.asof = localDT(new Date()); d.legs = null; d.m = null; d.err = null; store.set(posKey(S.idx), null); WI.key = ''; S.armReset = false; toast(`${S.idx} reset. Upload a chain to start again.`); } else S.armReset = true; render(); }
+  else if (a === 'wibase'){ WI.base = t.dataset.val; store.set('wibase', WI.base); WI.key = ''; render(); }
+  else if (a === 'wireset'){ WI.key = ''; render(); }
+  else if (a === 'copytxt'){ const ta = document.getElementById('txtReport'); const code = textReport(d.m, d);
+    const fallback = () => { if (ta){ ta.focus(); ta.select(); } toast('Copy blocked here. The text is selected: press Ctrl+C (or Cmd+C).'); };
+    try { navigator.clipboard.writeText(code).then(() => toast('Text report copied. Paste it into WhatsApp.'), fallback); } catch(err){ fallback(); } }
+  else if (a === 'copyhtml'){ const code = snapshotHTML(d.m, d); const ta = document.getElementById('snapCode');
+    const fallback = () => { if (ta){ ta.focus(); ta.select(); } toast('Copy blocked here. The code is selected: press Ctrl+C (or Cmd+C).'); };
+    try { navigator.clipboard.writeText(code).then(() => toast('HTML copied. Paste it into a Custom HTML section in Graphy.'), fallback); } catch(err){ fallback(); } }
+  else if (a === 'dlhtml'){ const L = '<', T = tag => L + tag + '>';
+    saveFile(`STWP_${S.idx}_snapshot_${stamp(d)}.html`, T('!doctype html') + T('html lang="en"') + T('he' + 'ad') + T('meta charset="utf-8"') + T('meta name="viewport" content="width=device-width,initial-scale=1"') + T('title') + 'STWP ' + S.idx + ' option chain snapshot' + T('/title') + T('/he' + 'ad') + T('bo' + 'dy style="margin:0;padding:16px;background:#FFFFFF"') + snapshotHTML(d.m, d) + T('/bo' + 'dy') + T('/html')); }
+  else if (a === 'png') dlPng();
+  else if (a === 'csv') dlCsv();
+});
+document.addEventListener('change', e => {
+  const t = e.target, d = S.data[S.idx];
+  if (['wiSpot','wiDays','wiIv','wiSpotN','wiDaysN','wiIvN','riskAmt','manSpot'].includes(t.id) || t.dataset.mp) return;
+  if (t.id === 'posFile'){ loadPosFiles([...t.files]); t.value = ''; return; }
+  if (t.id === 'posAsof') return;
+  if (t.id === 'fileIn'){ loadFiles([...t.files]); t.value = ''; return; }
+  if (t.id === 'asof' || t.id === 'expiry'){ d[t.id] = t.value; recompute(); render(); return; }
+  if (t.id === 'lot'){ const v = Math.max(1, Math.round(+t.value || 1)); d.lot = v; savedLots[S.idx] = v; store.set('lots', savedLots); render(); return; }
+  if (t.id === 'width'){ S.width = +t.value; render(); return; }
+  if (t.id === 'bandLo' || t.id === 'bandHi'){ const cur = (bands[S.idx] || BANDS_DEFAULT[S.idx]).slice(); cur[t.id === 'bandLo' ? 0 : 1] = Math.max(1, +t.value || 1); if (cur[0] > cur[1]) cur.reverse(); bands[S.idx] = cur; store.set('bands', bands); render(); return; }
+  if (t.dataset.leg != null){
+    const l = d.legs[+t.dataset.leg], k = t.dataset.set;
+    if (k === 'type' || k === 'K'){ l[k] = k === 'K' ? +t.value : t.value; const r = row(d.m, l.K), o = r && r[l.type === 'CE' ? 'ce' : 'pe']; l.prem = o ? o.ltp : 0; l.iv = o ? o.eiv : null; l.auto = true; }
+    else if (k === 'lots') l.lots = Math.max(1, Math.round(+t.value || 1));
+    else if (k === 'prem'){ l.prem = Math.max(0, +t.value || 0); l.auto = false; }
+    render();
+  }
+});
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (t.id === 'wiSpot' || t.id === 'wiDays' || t.id === 'wiIv'){ updateWhatIf('slider'); return; }
+  if (t.id === 'wiSpotN' || t.id === 'wiDaysN' || t.id === 'wiIvN'){ updateWhatIf('num'); return; }
+  if (t.dataset.mp){ const p = getPos(S.idx); if (!p) return; const v = parseFloat(t.value); p.manual = p.manual || {}; if (isFinite(v) && v >= 0) p.manual[t.dataset.mp] = v; else delete p.manual[t.dataset.mp]; p.manualAt = localDT(new Date()); setPos(S.idx, p); manualPL(); if (WI.base === 'manual') updateWhatIf('slider'); return; }
+  if (t.id === 'manSpot'){ const p = getPos(S.idx); if (!p) return; const v = parseFloat(t.value); p.manualSpot = isFinite(v) && v > 0 ? v : null; setPos(S.idx, p); if (WI.base === 'manual') updateWhatIf('slider'); return; }
+  if (t.id === 'riskAmt'){ SIZ.risk = Math.max(0, +t.value || 0); store.set('risk', SIZ.risk); const d = S.data[S.idx], m = d.m, p = getPos(S.idx); if (!m || !p) return;
+    const L = posLegs(p, m), st = ENG.strat(L, m, d.lot); let ref, refTxt;
+    if (isFinite(st.maxLoss)){ ref = Math.abs(st.maxLoss); refTxt = 'max loss at expiry'; } else { const sm = m.sigmaMove || m.F * m.atmIV / Math.sqrt(252) * 3; ref = Math.abs(Math.min(st.pay(m.F - 2*sm), st.pay(m.F + 2*sm), 0)); refTxt = `loss at expiry after a 2σ move (±${nf(2*sm)} pts), because max loss is unlimited`; }
+    const mult = ref > 0 ? Math.floor(SIZ.risk / ref) : 0;
+    document.getElementById('sizeOut').innerHTML = sizeText(mult, ref, refTxt, L.map(l => `${l.lots * Math.max(mult, 1)}× ${nf(l.K)} ${l.type}`).join(' · ')); }
+});
+['dragenter','dragover'].forEach(ev => document.addEventListener(ev, e => { e.preventDefault(); document.body.classList.add('drop-on'); }));
+['dragleave','drop'].forEach(ev => document.addEventListener(ev, e => { e.preventDefault(); if (ev === 'drop' || !e.relatedTarget) document.body.classList.remove('drop-on'); }));
+document.addEventListener('drop', e => { const f = [...(e.dataTransfer?.files || [])].filter(x => /\.csv$/i.test(x.name)); if (f.length) (S.view === 'position' && getPos(S.idx) ? loadPosFiles(f) : loadFiles(f)); });
+
+recompute(); render();
+})();
+</script>
+
+</body>
+</html>
