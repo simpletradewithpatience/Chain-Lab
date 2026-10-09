@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>STWP Chain Lab</title>
+<title>STWP Chain Lab Pro</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&display=swap">
@@ -12,7 +12,7 @@
 :root{
   --bg:#EEF2EE; --surface:#FFFFFF; --sunk:#F5F8F5; --ink:#17201B; --muted:#5C6962; --line:#D7DFD8; --line-2:#E6ECE7;
   --green:#027B06; --orange:#F99309; --red:#D8262F; --green-soft:#E3F1E3; --red-soft:#FBE5E6; --orange-soft:#FEF0DB;
-  --ce:#D8262F; --pe:#027B06; --focus:#027B06;
+  --ce:#D8262F; --pe:#027B06; --focus:#027B06; --blue:#2A6FD6;
   --f-display:"Source Serif 4", Georgia, "Times New Roman", serif;
   --f-ui:"IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
   --f-num:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
@@ -20,11 +20,11 @@
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#0E1310; --surface:#151C17; --sunk:#111713; --ink:#E4EBE5; --muted:#91A097; --line:#2A352D; --line-2:#212A23;
   --green:#45B84C; --orange:#F7A43A; --red:#EF5A61; --green-soft:#17301A; --red-soft:#3A1A1C; --orange-soft:#3A2A12;
-  --ce:#EF5A61; --pe:#45B84C; --focus:#45B84C; color-scheme:dark }}
+  --ce:#EF5A61; --pe:#45B84C; --focus:#45B84C; --blue:#6EA8F5; color-scheme:dark }}
 :root[data-theme="dark"]{
   --bg:#0E1310; --surface:#151C17; --sunk:#111713; --ink:#E4EBE5; --muted:#91A097; --line:#2A352D; --line-2:#212A23;
   --green:#45B84C; --orange:#F7A43A; --red:#EF5A61; --green-soft:#17301A; --red-soft:#3A1A1C; --orange-soft:#3A2A12;
-  --ce:#EF5A61; --pe:#45B84C; --focus:#45B84C; color-scheme:dark }
+  --ce:#EF5A61; --pe:#45B84C; --focus:#45B84C; --blue:#6EA8F5; color-scheme:dark }
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font:14px/1.5 var(--f-ui);margin:0}
 .wrap{max-width:1240px;margin:0 auto;padding-inline:16px;padding-block:16px 40px;display:flex;flex-direction:column;gap:14px}
@@ -38,6 +38,7 @@ h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0}
 .brand{display:flex;align-items:baseline;gap:10px;margin-right:auto}
 .brand .mark{font:600 11px/1 var(--f-num);letter-spacing:.14em;color:var(--green);border:1px solid var(--green);padding:4px 6px;border-radius:3px}
 .brand h1{font-size:24px;font-weight:600}
+.brand .pro{font:600 11px/1 var(--f-num);letter-spacing:.12em;text-transform:uppercase;color:var(--surface);background:var(--green);padding:4px 6px;border-radius:3px;vertical-align:middle}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;background:var(--surface);padding:2px}
 .seg button{border:0;background:none;padding:6px 12px;border-radius:4px;cursor:pointer;font-weight:500;color:var(--muted)}
 .seg button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
@@ -208,6 +209,26 @@ details.why ul{margin:6px 0 0;padding-left:16px;display:flex;flex-direction:colu
 tr.atm0 td{background:var(--sunk);font-weight:600}
 .sizeout{font-size:14px}
 .upd{border-color:var(--green)}
+.closef{border:2px solid var(--orange)}
+.pfwrap{position:relative}
+.pfoi{font-size:12.5px;color:var(--muted);margin:6px 0 2px}
+.pftip{position:absolute;z-index:4;pointer-events:none;background:var(--surface);border:1px solid var(--line);box-shadow:0 6px 18px rgba(0,0,0,.14);border-radius:8px;padding:9px 12px;font-size:12.5px;min-width:200px}
+.pfth{margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid var(--line-2)}
+.pftr{display:flex;justify-content:space-between;gap:14px;font-family:var(--f-num)} .pftr span{font-family:var(--f-ui);color:var(--muted)}
+.pfctl{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px 22px;margin-top:10px}
+@media (max-width:820px){.pfctl{grid-template-columns:1fr}}
+.pfctl input[type=range]{width:100%;accent-color:var(--blue)}
+.pfctl .field label b{color:var(--ink);text-transform:none;letter-spacing:0;margin-left:4px}
+.linkbtn{border:0;background:none;color:var(--blue);padding:2px 0;cursor:pointer;font-size:12.5px;align-self:flex-start}
+.pfsd{margin-top:12px;max-width:560px}
+.pfm{grid-template-columns:repeat(4,minmax(0,1fr))!important;margin-bottom:6px}
+@media (max-width:900px){.pfm{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+.betog{display:inline-flex;margin-left:6px;border:1px solid var(--line);border-radius:999px;overflow:hidden;vertical-align:middle}
+.betog button{border:0;background:none;font:500 10.5px var(--f-ui);padding:2px 8px;cursor:pointer;color:var(--muted);text-transform:none;letter-spacing:0}
+.betog button[aria-pressed="true"]{background:var(--blue);color:#fff}
+.hit{color:var(--green);font-weight:700;margin-left:4px} .miss{color:var(--red);font-weight:700;margin-left:4px}
+.exsum{font-size:14px;padding-bottom:6px}
+.exsum b{font-size:18px;margin-left:6px}
 .mprice{width:96px;border:1px solid var(--green);background:var(--sunk);border-radius:4px;padding:3px 6px;font-family:var(--f-num);font-size:12.5px;text-align:right}
 .updrow{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:end;margin-top:10px}
 details.qa{border-bottom:1px solid var(--line-2)}
@@ -241,12 +262,13 @@ footer p{margin:0;max-width:110ch}
 
 <div class="wrap" id="app">
   <header class="top">
-    <div class="brand"><span class="mark">STWP</span><h1>Chain Lab</h1></div>
+    <div class="brand"><span class="mark">STWP</span><h1>Chain Lab <span class="pro">Pro</span></h1></div>
     <div class="seg" id="idxTabs" role="group" aria-label="Index"></div>
     <div class="actions">
       <label class="btn primary" for="fileIn">Upload CSV</label>
       <input type="file" id="fileIn" accept=".csv,text/csv" multiple hidden>
       <button class="btn" id="goShare" type="button">Share card</button>
+      <button class="btn" type="button" data-act="gojournal">Journal &amp; backup</button>
     </div>
   </header>
   <div id="bannerSlot"></div>
@@ -598,7 +620,8 @@ const IDX = Object.keys(LOTS);
 const roleOf = (files, f) => f === 'snake' || !files.snake ? 'Primary file' : 'Cross-check file';
 const pad = n => String(n).padStart(2,'0');
 const localDT = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-const store = { get(k){ try{ return JSON.parse(localStorage.getItem('stwpcl.'+k)); }catch(e){ return null; } }, set(k,v){ try{ localStorage.setItem('stwpcl.'+k, JSON.stringify(v)); }catch(e){} } };
+const SP = 'stwpclpro.';
+const store = { get(k){ try{ return JSON.parse(localStorage.getItem(SP+k)); }catch(e){ return null; } }, set(k,v){ try{ localStorage.setItem(SP+k, JSON.stringify(v)); }catch(e){} } };
 const savedLots = store.get('lots') || {};
 
 const now = new Date();
@@ -608,12 +631,12 @@ const stocks = (store.get('stocks') || []).filter(x => typeof x === 'string');
 function ensureData(i){ if (!S.data[i]) S.data[i] = { files:{}, sample:false, asof: localDT(new Date()), expiry:'', lot: savedLots[i] || LOTS[i] || null, legs:null, m:null, err:null }; return S.data[i]; }
 IDX.forEach(ensureData); stocks.forEach(ensureData);
 // Example data so the tool opens in a working state
-(() => {
+function loadSample(){
   const d = S.data.NIFTY;
   const fa = ENG.parseFile(SAMPLE_A), fb = ENG.parseFile(SAMPLE_B);
   d.files.snake = { name:'chain-a.csv', ...fa }; d.files.mirror = { name:'chain-b.csv', ...fb };
   d.sample = true; d.asof = localDT(new Date()); d.expiry = '2026-10-13';
-})();
+}
 
 /* ---------- format ---------- */
 const nf = (n, d=0) => n == null || !isFinite(n) ? '–' : (Math.abs(n) < 0.5 * Math.pow(10, -d) ? 0 : n).toLocaleString('en-IN', {minimumFractionDigits:d, maximumFractionDigits:d});
@@ -664,7 +687,7 @@ const GLOSS = {
   theta:'How much an option loses in value each day if nothing else changes.',
   gamma:'How fast an option\'s delta changes as the index moves.',
   gex:'Net gamma exposure: call gamma × call OI minus put gamma × put OI, assuming market makers are long calls and short puts. Positive tends to damp moves; negative tends to amplify them.',
-  flip:'The index level where net gamma exposure changes sign.',
+  flip:'Gamma flip: the strike where net gamma × open interest (calls minus puts, at today\'s level) changes sign. The zero-gamma level is where the whole book\'s exposure crosses zero as the index moves.',
   liq:'The call and put strike with the most open interest within 2 strikes of ATM: usually the easiest to trade, with the tightest prices.',
   level:'The index level here is worked out from option prices (put-call parity), so it lines up with the chain.'
 };
@@ -750,10 +773,16 @@ function chainRead(m, d){
   // gamma regime on engine gamma
   const gex = S2 => m.rows.reduce((a, r) => { const gc = ENG.greeks(S2, r.strike, m.T, r.ce.eiv || m.atmIV, true), gp = ENG.greeks(S2, r.strike, m.T, r.pe.eiv || m.atmIV, false); return a + (gc ? gc.gamma * (r.ce.oi||0) : 0) - (gp ? gp.gamma * (r.pe.oi||0) : 0); }, 0);
   const g0 = gex(F);
+  // zero-gamma level of the whole book, searched over ±3σ (or the loaded strikes, whichever is wider)
+  const gsd = m.sigmaMove || st * 6, glo = Math.min(m.kmin, F - 3 * gsd), ghi = Math.max(m.kmax, F + 3 * gsd), gstep = Math.max(st / 4, (ghi - glo) / 400);
   let flipK = null, best = Infinity;
-  for (let x = m.kmin; x < m.kmax; x += st/4){ const a = gex(x), b = gex(x + st/4); if (a === 0 || a * b < 0){ const z = x + (st/4) * a / (a - b); if (Math.abs(z - F) < best){ best = Math.abs(z - F); flipK = z; } } }
+  for (let x = glo; x < ghi; x += gstep){ const a = gex(x), b = gex(x + gstep); if (a === 0 || a * b < 0){ const z = x + gstep * a / (a - b); if (Math.abs(z - F) < best){ best = Math.abs(z - F); flipK = z; } } }
+  // per-strike gamma flip: the strike where net gamma x OI (calls minus puts) changes sign, nearest the current level
+  const gsk = m.rows.map(r => { const gc = ENG.greeks(F, r.strike, m.T, r.ce.eiv || m.atmIV, true), gp = ENG.greeks(F, r.strike, m.T, r.pe.eiv || m.atmIV, false); return { k: r.strike, v: (gc ? gc.gamma * (r.ce.oi || 0) : 0) - (gp ? gp.gamma * (r.pe.oi || 0) : 0) }; }).filter(x => x.v !== 0);
+  let gStrike = null, gUp = true, gb = Infinity;
+  for (let i = 1; i < gsk.length; i++) if (Math.sign(gsk[i].v) !== Math.sign(gsk[i-1].v)){ const k = gsk[i].k; if (Math.abs(k - F) < gb){ gb = Math.abs(k - F); gStrike = k; gUp = gsk[i].v > 0; } }
   A.push({k:term('Gamma regime','gex'), tag: g0 > 0 ? 'Positive gamma' : 'Negative gamma', tone: g0 > 0 ? '' : 'wa',
-    html: flipK ? `Net gamma exposure is ${g0 > 0 ? 'positive' : 'negative'} at ${nf(F)}. It ${term('flips','flip')} near ${N(flipK)} (${away(flipK)}).` : `Net gamma exposure is ${g0 > 0 ? 'positive' : 'negative'} across the whole loaded range.`,
+    html: `${gStrike != null ? `${term('Gamma flip','flip')} at ${N(gStrike)} (${away(gStrike)}): per strike, gamma × OI turns from ${gUp ? 'put-heavy below to call-heavy from here up' : 'call-heavy below to put-heavy from here up'}. ` : 'Per strike, gamma × OI does not change sign across the loaded strikes. '}Across the whole book, exposure is ${g0 > 0 ? 'positive' : 'negative'} at ${nf(F)}${flipK ? ` and crosses zero near ${N(flipK)} (${away(flipK)})` : ` and stays ${g0 > 0 ? 'positive' : 'negative'} within ±3σ (${nf(F - 3 * gsd)}–${nf(F + 3 * gsd)})`}.`,
     means: g0 > 0 ? `Market makers hedging this book would sell into rises and buy into falls, which tends to keep ${ix} in a range.${flipK ? ` Below ${nf(flipK)} that support fades and moves can speed up.` : ''}` : `Market makers hedging this book would buy into rises and sell into falls, which tends to make moves bigger.${flipK ? ` Above ${nf(flipK)} this calms down.` : ''}`,
     note:'Assumes market makers are long calls and short puts, the common convention. Their real positions are not published, so treat this as a rough guide.'});
   secs.push(['Activity', A]);
@@ -802,7 +831,7 @@ function chainRead(m, d){
   secs.push(['Volatility & time', V]);
 
   const headline = `${pos[0]} OI · ${flow[3]} · ${inside ? `Range ${nf(sup)}–${nf(res)}` : F > res ? `Above ${nf(res)} resistance` : `Below ${nf(sup)} support`} · ${reg[0]} · ±${nf(m.straddle)} pts by ${exp}`;
-  return { headline, secs, lean: flow[0] === 'Leans up' ? 'Bullish' : flow[0] === 'Leans down' ? 'Bearish' : 'Neutral', sup, res, reg: reg[0], flipK, bestCE: bc.strike, bestPE: bp.strike, flowCE: top('ce'), flowPE: top('pe'), hv, posTag: pos[0], g0, cv, pv };
+  return { gStrike, headline, secs, lean: flow[0] === 'Leans up' ? 'Bullish' : flow[0] === 'Leans down' ? 'Bearish' : 'Neutral', sup, res, reg: reg[0], flipK, bestCE: bc.strike, bestPE: bp.strike, flowCE: top('ce'), flowPE: top('pe'), hv, posTag: pos[0], g0, cv, pv };
 }
 function readHTML(m, d){
   const r = chainRead(m, d), [lo, hi] = bands[S.idx] || BANDS_DEFAULT[S.idx] || ['', ''];
@@ -824,7 +853,7 @@ function recompute(i = S.idx){
   d.merged = ENG.merge(d.files);
   const m = ENG.model(d.merged, T);
   if (m.error){ d.err = m.error; return; }
-  d.m = m; saveHist(i, d, m); logPosSnap(i, d, m);
+  d.m = m; saveHist(i, d, m); logPosSnap(i, d, m); saveSnap(i, d, m);
   if (!d.legs) d.legs = legsFrom(ENG.templates(m, S.width).find(t => t.name === 'Long Straddle').legs, m);
   else d.legs.forEach(l => { const r = row(m, l.K); if (r && l.auto){ const o = r[l.type === 'CE' ? 'ce' : 'pe']; l.prem = o.ltp; l.iv = o.eiv; } });
 }
@@ -850,15 +879,17 @@ function renderTop(){
     + (S.adding ? `<form id="addStock" class="addstock"><label class="sr" for="newSym">Stock symbol</label><input id="newSym" autocomplete="off" maxlength="20" placeholder="e.g. RELIANCE" required><button type="submit">Add</button><button type="button" data-act="addcancel" aria-label="Cancel">×</button></form>`
        : `<button type="button" data-act="addstock">+ Stock</button>`);
   const d = S.data[S.idx];
-  $('#bannerSlot').innerHTML = '';
-  const files = Object.entries(d.files).map(([f, o]) => `<span class="chip"><b>${roleOf(d.files, f)}</b><span class="mut">${o.rows.length} strikes</span><button class="x" type="button" data-rm="${f}" aria-label="Remove ${roleOf(d.files, f).toLowerCase()}">×</button></span>`).join('');
+  const lb = store.get('lastBackup'), nPos = POS.list.length;
+  $('#bannerSlot').innerHTML = S.restore ? `<div class="banner"><p><b>Restore backup from ${esc(dateTxt(S.restore.j.created))}?</b> It holds ${esc(S.restore.summary)}. This replaces everything Chain Lab Pro has saved in this browser.</p><button class="btn small primary" type="button" data-act="restoreok">Replace my data</button><button class="btn small" type="button" data-act="restorecancel">Cancel</button></div>`
+    : nPos && (!lb || (new Date() - new Date(lb)) / 864e5 > 7) ? `<div class="banner"><p>${lb ? `Last backup ${esc(dateTxt(lb))}.` : 'No backup yet.'} Your positions and journal live only in this browser.</p><button class="btn small" type="button" data-act="backup">Download backup</button></div>` : '';
+  const files = Object.entries(d.files).map(([f, o]) => `<span class="chip"><b>${o.reopened ? 'Saved upload' : roleOf(d.files, f)}</b><span class="mut">${o.rows.length} strikes</span><button class="x" type="button" data-rm="${f}" aria-label="Remove ${roleOf(d.files, f).toLowerCase()}">×</button></span>`).join('');
   $('#status').innerHTML = `
     <div class="chips">${files || '<span class="note">No file loaded for ' + S.idx + '</span>'}${ageBadge(d)}</div>
     <div class="field"><label for="asof">Data time</label><input type="datetime-local" id="asof" value="${d.asof}"></div>
     <div class="field"><label for="expiry">Expiry</label><input type="date" id="expiry" value="${d.expiry}"></div>
     <div class="field"><label for="lot">Lot size</label><input type="number" id="lot" min="1" step="1" value="${d.lot || ''}" placeholder="required"></div>
-    <button class="btn small" type="button" data-act="resetidx" title="${isStock(S.idx) ? 'Removes this stock with its files, tracked position and P&amp;L history' : 'Clears the loaded files, the tracked position and its P&amp;L history'} for ${S.idx}">${S.armReset ? `Click again to ${isStock(S.idx) ? 'remove' : 'reset'} ${S.idx}` : `${isStock(S.idx) ? 'Remove' : 'Reset'} ${S.idx}`}</button>`;
-  const views = [['chain','Option chain'],['greeks','Greeks & IV'],['compare','Multistrike'],['strategies','Strategies'],['builder','Strategy builder'],['position','Position'],['share','Share & export']];
+    <button class="btn small" type="button" data-act="resetidx" title="${isStock(S.idx) ? 'Removes this stock with its files, tracked position and P&amp;L history' : 'Clears the loaded files and the open positions with their P&amp;L history (closed trades stay in the journal)'} for ${S.idx}">${S.armReset ? `Click again to ${isStock(S.idx) ? 'remove' : 'reset'} ${S.idx}` : `${isStock(S.idx) ? 'Remove' : 'Reset'} ${S.idx}`}</button>`;
+  const views = [['chain','Option chain'],['greeks','Greeks & IV'],['compare','Multistrike'],['strategies','Strategies'],['builder','Strategy builder'],['position','Position'],['shift','OI shift'],['journal','Journal'],['score','Scorecard'],['share','Share & export']];
   $('#viewTabs').innerHTML = views.map(([k, t]) => `<button type="button" role="tab" data-view="${k}" aria-selected="${k === S.view}">${t}</button>`).join('');
 }
 
@@ -866,17 +897,19 @@ function renderTop(){
 function render(){
   renderTop();
   const d = S.data[S.idx], v = $('#view');
+  if (S.view === 'journal' || S.view === 'score'){ v.innerHTML = S.view === 'journal' ? vJournal(d.m, d) : vScore(); return; }
   if (!Object.keys(d.files).length){
     v.innerHTML = `<div class="empty"><h2>Load a ${S.idx} option chain</h2>${isStock(S.idx) && !d.lot ? `<p><b>First enter the ${S.idx} lot size</b> in the bar above.</p>` : ''}
       <p>Upload one option-chain export, or two exports of the same expiry from different providers. With two files, the self-describing layout (columns like strike_price) is used as primary and the mirrored layout adds day open/high/low and a cross-check. Drop the files anywhere on this page or use the button.</p>
-      <label class="btn primary" for="fileIn">Upload CSV</label></div>`;
+      <label class="btn primary" for="fileIn">Upload CSV</label>${(() => { const ls = latestSnap(S.idx, false); return ls ? `<button class="btn" type="button" data-act="reopen">Reopen last upload: ${esc(tmTxt(ls.snap.asof))} · expiry ${esc(dateTxt(ls.e))}</button>` : ''; })()}</div>`;
     return;
   }
   if (d.err){ v.innerHTML = `<div class="empty"><h2>Engine paused</h2><p>${esc(d.err)}</p></div>`; return; }
   const m = d.m;
-  v.innerHTML = ({chain:vChain, greeks:vGreeks, compare:vCompare, strategies:vStrats, builder:vBuilder, position:vPosition, share:vShare})[S.view](m, d);
+  v.innerHTML = ({chain:vChain, greeks:vGreeks, compare:vCompare, strategies:vStrats, builder:vBuilder, position:vPosition, shift:vShift, journal:vJournal, score:vScore, share:vShare})[S.view](m, d);
   if (S.view === 'share') drawCard();
-  if (S.view === 'position') updateWhatIf();
+  if (S.view === 'builder') drawPayoff();
+  if (S.view === 'position'){ updateWhatIf(); if (S.closing) closeCalc(); }
 }
 
 function metricsHTML(m){
@@ -901,7 +934,7 @@ function ladderTags(m, cr){
   const add = (k, side, label, cls) => { if (k == null) return; const key = m.rows.some(r => r.strike === k) ? k : m.rows.reduce((a, r) => Math.abs(r.strike - k) < Math.abs(a - k) ? r.strike : a, m.rows[0].strike); (T[key] = T[key] || {ce:[], pe:[], mid:[]})[side].push([label, cls]); };
   add(cr.res, 'ce', 'Resistance', 'ce'); add(m.callWall, 'ce', 'Call wall', 'ce'); add(kOff(m, cr.res, 1), 'ce', 'Breakout', ''); add(kOff(m, cr.res, 3), 'ce', 'Upside', ''); add(cr.bestCE, 'ce', 'CE liquidity', 'liq');
   add(cr.sup, 'pe', 'Support', 'pe'); add(m.putWall, 'pe', 'Put wall', 'pe'); add(kOff(m, cr.sup, -1), 'pe', 'Breakdown', ''); add(kOff(m, cr.sup, -3), 'pe', 'Downside', ''); add(cr.bestPE, 'pe', 'PE liquidity', 'liq');
-  add(m.maxPain, 'mid', 'Max pain', ''); if (cr.flipK) add(cr.flipK, 'mid', 'Gamma flip', '');
+  add(m.maxPain, 'mid', 'Max pain', ''); if (cr.gStrike != null) add(cr.gStrike, 'mid', 'Gamma flip', '');
   return T;
 }
 const ltag = arr => (arr || []).map(([t, c]) => `<span class="lt ${c}">${t}</span>`).join('');
@@ -918,7 +951,7 @@ function vChain(m){
     return `<tr class="${r.strike === m.atm ? 'atm' : ''}">
       <td class="l tags">${ltag(tg.ce)}</td>${oiCell(r.ce,'ce')}<td class="${cls(r.ce.chgOi)}${itmC}">${sgn(r.ce.chgOi, lakh)}</td><td class="l${itmC}">${bu(r.ce.build)}</td>
       <td class="${itmC}">${lakh(r.ce.vol)}</td><td class="${itmC}${r.ce.stale ? ' mut' : ''}">${pctv(r.ce.eiv)}</td><td class="${itmC}${r.ce.stale ? ' stale' : ''}" ${r.ce.stale ? 'title="No trades today: this price may be old"' : ''}><b>${nf(r.ce.ltp,2)}</b>${fc}</td>
-      <td class="k">${nf(r.strike)}${tg.mid ? `<div class="midtags">${ltag(tg.mid)}</div>` : ''}</td>
+      <td class="k">${nf(r.strike)}${tg.mid && tg.mid.length ? `<div class="midtags">${ltag(tg.mid)}</div>` : ''}</td>
       <td class="${itmP}${r.pe.stale ? ' stale' : ''}" ${r.pe.stale ? 'title="No trades today: this price may be old"' : ''}><b>${nf(r.pe.ltp,2)}</b>${fp}</td><td class="${itmP}${r.pe.stale ? ' mut' : ''}">${pctv(r.pe.eiv)}</td><td class="${itmP}">${lakh(r.pe.vol)}</td>
       <td class="l${itmP}">${bu(r.pe.build)}</td><td class="${cls(r.pe.chgOi)}${itmP}">${sgn(r.pe.chgOi, lakh)}</td>${oiCell(r.pe,'pe')}<td class="l tags">${ltag(tg.pe)}</td></tr>`;
   }).join('');
@@ -1119,6 +1152,118 @@ function vStrats(m, d){
     <div class="cards">${cards}</div></div>`;
 }
 
+/* ---------- interactive payoff (Pro) ---------- */
+const PF = { key:'', spot:null, days:0, ivOff:0, be:'expiry' };
+let PFC = null;
+function payoffPanel(st, m, d){
+  const key = S.idx + '|' + d.asof + '|' + d.expiry;
+  if (PF.key !== key){ PF.key = key; PF.spot = Math.round(m.F); PF.days = 0; PF.ivOff = 0; }
+  const dte = m.T * 365, sd = m.sigmaMove || m.straddle, smin = Math.round((m.F - 3 * sd) / 5) * 5, smax = Math.round((m.F + 3 * sd) / 5) * 5;
+  return `<div class="panel pf"><div class="panel-head" style="margin-bottom:6px"><h2>Payoff</h2>
+      <div class="legend"><span><i style="background:var(--ink)"></i>At expiry</span><span><i style="background:var(--blue)"></i>On target date</span><span><i style="background:var(--ce);opacity:.55"></i>Call OI</span><span><i style="background:var(--pe);opacity:.55"></i>Put OI</span><span>┆ ±1SD, ±2SD</span></div></div>
+    <div id="pfStats"></div>
+    <div class="pfwrap"><div id="pfOi" class="pfoi"></div><div id="pfBox"></div><div id="pfTip" class="pftip" hidden></div></div>
+    <div class="pfctl">
+      <div class="field"><label for="pfSpotN">${S.idx} target <b id="pfSpotP" class="rnum"></b></label>
+        <div class="wipair"><button class="btn small" type="button" data-act="pfstep" data-val="-1" aria-label="Lower target">−</button><input type="number" id="pfSpotN" step="${m.step}" value="${PF.spot}"><button class="btn small" type="button" data-act="pfstep" data-val="1" aria-label="Raise target">+</button></div>
+        <input type="range" id="pfSpot" min="${smin}" max="${smax}" step="5" value="${PF.spot}" aria-label="Target level slider"><button class="linkbtn" type="button" data-act="pfreset" data-val="spot">Reset</button></div>
+      <div class="field"><label for="pfDays">Target date <b id="pfDateL" class="rnum"></b></label>
+        <div class="wipair"><button class="btn small" type="button" data-act="pfday" data-val="-1" aria-label="One day earlier">‹</button><input type="range" id="pfDays" min="0" max="${dte.toFixed(3)}" step="0.25" value="${Math.min(PF.days, dte)}"><button class="btn small" type="button" data-act="pfday" data-val="1" aria-label="One day later">›</button></div>
+        <button class="linkbtn" type="button" data-act="pfreset" data-val="days">Reset</button></div>
+      <div class="field"><label for="pfIvN">IV offset <b class="rnum" style="text-transform:none">(points, all legs)</b></label>
+        <div class="wipair"><input type="range" id="pfIv" min="-10" max="10" step="0.5" value="${PF.ivOff}" aria-label="IV offset slider"><input type="number" id="pfIvN" step="0.5" value="${PF.ivOff}"></div>
+        <button class="linkbtn" type="button" data-act="pfreset" data-val="iv">Reset</button></div>
+    </div>
+    <div id="pfSd" class="pfsd"></div></div>`;
+}
+function drawPayoff(){
+  const box = document.getElementById('pfBox'); if (!box) return;
+  const d = S.data[S.idx], m = d.m; if (!m || !d.legs || !d.legs.length) return;
+  const st = ENG.strat(d.legs, m, d.lot); if (!st) return;
+  const F = m.F, sd = m.sigmaMove || m.straddle, L = st.legs, dte = m.T * 365;
+  PF.days = Math.min(Math.max(PF.days, 0), dte);
+  const Tt = Math.max(m.T - PF.days / 365, 0), ivo = PF.ivOff / 100;
+  const tgt = S2 => L.reduce((a, l) => a + l.sg * l.q * (ENG.price(S2, l.K, Tt, Math.max(0.005, (l.iv || m.atmIV) + ivo), l.call) - l.prem), 0);
+  const exp = st.pay;
+  const lo = Math.min(F - 2.6 * sd, ...st.ks.map(k => k - m.step * 2), PF.spot - m.step), hi = Math.max(F + 2.6 * sd, ...st.ks.map(k => k + m.step * 2), PF.spot + m.step);
+  const N = 240, xs = Array.from({length: N + 1}, (_, i) => lo + (hi - lo) * i / N).concat(st.ks.filter(k => k > lo && k < hi)).sort((a, b) => a - b);
+  const ye = xs.map(exp), yt = xs.map(tgt);
+  let mn = Math.min(...ye, ...yt, 0), mx = Math.max(...ye, ...yt, 0); const pad = (mx - mn) * 0.1 || 1; mn -= pad; mx += pad;
+  const W = 900, H = 400, pl = 74, pr = 92, pt = 28, pb = 40;
+  const X = v => pl + (v - lo) / (hi - lo) * (W - pl - pr), Y = v => pt + (1 - (v - mn) / (mx - mn)) * (H - pt - pb), y0 = Y(0);
+  // OI bars (right axis), from the bottom of the plot
+  const vis = m.rows.filter(r => r.strike >= lo && r.strike <= hi), oiMax = Math.max(1, ...vis.map(r => Math.max(r.ce.oi || 0, r.pe.oi || 0)));
+  const oiH = (H - pt - pb) * 0.55, base = H - pb, OY = v => base - v / oiMax * oiH;
+  const gap = vis.length > 1 ? (X(vis[1].strike) - X(vis[0].strike)) : 20, bw = Math.max(2, Math.min(gap * 0.28, 9));
+  const bars = vis.map(r => `<rect x="${(X(r.strike) - bw - 0.5).toFixed(1)}" y="${OY(r.ce.oi || 0).toFixed(1)}" width="${bw.toFixed(1)}" height="${(base - OY(r.ce.oi || 0)).toFixed(1)}" fill="var(--ce)" opacity=".28"/><rect x="${(X(r.strike) + 0.5).toFixed(1)}" y="${OY(r.pe.oi || 0).toFixed(1)}" width="${bw.toFixed(1)}" height="${(base - OY(r.pe.oi || 0)).toFixed(1)}" fill="var(--pe)" opacity=".28"/>`).join('');
+  const pE = xs.map((x, i) => X(x).toFixed(1) + ',' + Y(ye[i]).toFixed(1)).join(' '), pT = xs.map((x, i) => X(x).toFixed(1) + ',' + Y(yt[i]).toFixed(1)).join(' ');
+  const yk = niceTicks(mn, mx, 5), xk = niceTicks(lo, hi, 7), ok = [0, oiMax / 2, oiMax];
+  const sdl = [[-2, '−2SD'], [-1, '−1SD'], [1, '1SD'], [2, '2SD']].filter(([k]) => F + k * sd > lo && F + k * sd < hi);
+  const tP = tgt(PF.spot), eP = exp(PF.spot), tx = X(PF.spot);
+  const dateAt = new Date(new Date(d.asof).getTime() + PF.days * 864e5), dTxt = dateAt.toLocaleString('en-IN', {weekday:'short', day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit', hour12:false});
+  box.innerHTML = `<svg class="chart" id="pfSvg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Payoff chart with open interest">
+    <defs><clipPath id="pfA"><rect x="${pl}" y="${pt}" width="${W-pl-pr}" height="${Math.max(0, y0 - pt)}"/></clipPath><clipPath id="pfB"><rect x="${pl}" y="${y0}" width="${W-pl-pr}" height="${Math.max(0, H - pb - y0)}"/></clipPath></defs>
+    ${yk.map(v => `<line x1="${pl}" x2="${W-pr}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line-2)"/><text x="${pl-8}" y="${Y(v)+4}" text-anchor="end">${v < 0 ? '−' : ''}₹${nf(Math.abs(v))}</text>`).join('')}
+    ${ok.map(v => `<text x="${W-pr+8}" y="${OY(v)+4}">${lakh(v)}</text>`).join('')}
+    <text x="${W-8}" y="${pt + (H-pt-pb)/2}" transform="rotate(90 ${W-8} ${pt + (H-pt-pb)/2})" text-anchor="middle">Open interest</text>
+    <text x="16" y="${pt + (H-pt-pb)/2}" transform="rotate(-90 16 ${pt + (H-pt-pb)/2})" text-anchor="middle">Profit / loss</text>
+    ${bars}
+    ${xk.map(v => `<text x="${X(v)}" y="${H-14}" text-anchor="middle">${nf(v)}</text>`).join('')}
+    <polygon points="${X(xs[0])},${y0} ${pE} ${X(xs[xs.length-1])},${y0}" fill="var(--green)" opacity=".16" clip-path="url(#pfA)"/>
+    <polygon points="${X(xs[0])},${y0} ${pE} ${X(xs[xs.length-1])},${y0}" fill="var(--red)" opacity=".16" clip-path="url(#pfB)"/>
+    <line x1="${pl}" x2="${W-pr}" y1="${y0}" y2="${y0}" stroke="var(--muted)"/>
+    ${sdl.map(([k, t]) => `<line x1="${X(F + k*sd)}" x2="${X(F + k*sd)}" y1="${pt}" y2="${H-pb}" stroke="var(--muted)" stroke-dasharray="3 4" opacity=".7"/><text x="${X(F + k*sd)}" y="${pt-8}" text-anchor="middle">${t}</text>`).join('')}
+    <line x1="${X(F)}" x2="${X(F)}" y1="${pt}" y2="${H-pb}" stroke="var(--ink)" stroke-dasharray="6 4" opacity=".6"/><text x="${X(F)}" y="${pt-8}" text-anchor="middle" class="lbl">${S.idx} ${nf(F)}</text>
+    <polyline points="${pE}" fill="none" stroke="var(--ink)" stroke-width="2.2"/>
+    <polyline points="${pT}" fill="none" stroke="var(--blue)" stroke-width="2"/>
+    <line x1="${tx}" x2="${tx}" y1="${pt}" y2="${H-pb}" stroke="var(--blue)" stroke-dasharray="2 3"/>
+    <circle cx="${tx}" cy="${Y(tP)}" r="5" fill="var(--surface)" stroke="var(--blue)" stroke-width="2"/>
+    <line id="pfHov" x1="0" x2="0" y1="${pt}" y2="${H-pb}" stroke="var(--orange)" stroke-width="1.2" visibility="hidden"/>
+    <circle id="pfHovE" r="4" fill="var(--ink)" visibility="hidden"/><circle id="pfHovT" r="4" fill="var(--blue)" visibility="hidden"/>
+    <rect id="pfHit" x="${pl}" y="${pt}" width="${W-pl-pr}" height="${H-pt-pb}" fill="transparent" style="cursor:crosshair"/>
+  </svg>`;
+  PFC = { W, pl, pr, lo, hi, X, Y, tgt, exp, F, dTxt, m };
+  // labels
+  const g = id => document.getElementById(id);
+  g('pfSpotP').textContent = `${nf(PF.spot)} (${sgn((PF.spot - F) / F * 100, v => nf(v, 2))}%)`;
+  if (document.activeElement !== g('pfSpotN')) g('pfSpotN').value = PF.spot;
+  g('pfSpot').value = PF.spot; g('pfDays').value = PF.days; g('pfIv').value = PF.ivOff; if (document.activeElement !== g('pfIvN')) g('pfIvN').value = PF.ivOff;
+  g('pfDateL').textContent = `${dTxt} · ${nf(dte - PF.days, 1)} days to expiry`;
+  // stats
+  const scanBE = f => { const out = []; const pts = Array.from({length: 801}, (_, i) => lo + (hi - lo) * i / 800); for (let i = 1; i < pts.length; i++){ const a = f(pts[i-1]), b = f(pts[i]); if (a === 0) out.push(pts[i-1]); else if (a * b < 0) out.push(pts[i-1] + (pts[i] - pts[i-1]) * (-a) / (b - a)); } return out; };
+  const beE = st.be, beT = scanBE(tgt), be = PF.be === 'target' ? beT : beE;
+  const intr = L.reduce((a, l) => a + l.sg * l.q * Math.max(l.call ? F - l.K : l.K - F, 0), 0), prem = L.reduce((a, l) => a + l.sg * l.q * l.prem, 0);
+  const s = (k, v, c = '', sub = '') => `<div class="metric"><span class="k">${k}</span><span class="v ${c}">${v}</span>${sub ? `<span class="s">${sub}</span>` : ''}</div>`;
+  g('pfStats').innerHTML = `<div class="metrics pfm">
+    ${s('P&amp;L on target date', rupee(tP), cls(tP), `at ${nf(PF.spot)}, ${dateAt.toLocaleDateString('en-IN', {day:'2-digit', month:'short'})}`)}
+    ${s('P&amp;L at expiry', rupee(eP), cls(eP), `at ${nf(PF.spot)}`)}
+    ${s('Max profit / loss', `${rupee(st.maxProfit)} / ${rupee(st.maxLoss)}`, '', 'at expiry')}
+    ${s('Prob. of profit', st.pop == null ? '–' : pctv(st.pop), '', 'at expiry')}
+    <div class="metric"><span class="k">Breakevens <span class="betog"><button type="button" data-act="pfbe" data-val="target" aria-pressed="${PF.be === 'target'}">Target</button><button type="button" data-act="pfbe" data-val="expiry" aria-pressed="${PF.be === 'expiry'}">Expiry</button></span></span><span class="v" style="font-size:15px">${be.length ? be.map(b => `${nf(b)} <span class="s">(${sgn((b - F) / F * 100, v => nf(v, 2))}%)</span>`).join(' · ') : '–'}</span></div>
+    ${s('Time value', rupee(prem - intr), '', 'premium above intrinsic value')}
+    ${s('Intrinsic value', rupee(intr), '', `at ${S.idx} ${nf(F)}`)}
+    ${s('Reward : risk', st.rr == null ? 'NA' : nf(st.rr, 2))}
+  </div>`;
+  const sdRow = k => `<tr><td class="l">${k} SD</td><td>${nf(k * sd)} (${nf(k * sd / F * 100, 2)}%)</td><td>${nf(F - k * sd)} – ${nf(F + k * sd)}</td></tr>`;
+  g('pfSd').innerHTML = `<div class="tbl-wrap"><table><thead><tr><th class="l">Standard deviation to expiry</th><th>Points</th><th>${S.idx} range</th></tr></thead><tbody>${sdRow(1)}${sdRow(2)}</tbody></table></div>`;
+  // hover
+  const svg = g('pfSvg'), tip = g('pfTip'), oi = g('pfOi');
+  const showOi = S2 => { const r = m.rows.reduce((a, b) => Math.abs(b.strike - S2) < Math.abs(a.strike - S2) ? b : a); oi.innerHTML = `OI at <b>${nf(r.strike)}</b> · <span style="color:var(--pe)">Put OI ${lakh(r.pe.oi)}</span> · <span style="color:var(--ce)">Call OI ${lakh(r.ce.oi)}</span>`; };
+  showOi(PF.spot);
+  const move = ev => { const rc = svg.getBoundingClientRect(), px = (ev.clientX - rc.left) * W / rc.width; if (px < pl || px > W - pr){ hide(); return; }
+    const S2 = lo + (px - pl) / (W - pl - pr) * (hi - lo), e1 = exp(S2), t1 = tgt(S2), hv = g('pfHov');
+    hv.setAttribute('x1', px); hv.setAttribute('x2', px); hv.setAttribute('visibility', 'visible');
+    const he = g('pfHovE'), ht = g('pfHovT'); he.setAttribute('cx', px); he.setAttribute('cy', Y(e1)); ht.setAttribute('cx', px); ht.setAttribute('cy', Y(t1)); he.setAttribute('visibility', 'visible'); ht.setAttribute('visibility', 'visible');
+    tip.hidden = false; tip.innerHTML = `<div class="pfth">When ${S.idx} is at <b>${nf(S2)}</b> <span class="mut">(${sgn((S2 - F) / F * 100, v => nf(v, 2))}%)</span></div>
+      <div class="pftr"><span>At expiry</span><b class="${cls(e1)}">${rupee(e1)}</b></div><div class="pftr"><span>On ${dateAt.toLocaleDateString('en-IN', {day:'2-digit', month:'short'})}</span><b class="${cls(t1)}">${rupee(t1)}</b></div>`;
+    const wrap = tip.parentElement.getBoundingClientRect(), x = ev.clientX - wrap.left, y = ev.clientY - wrap.top;
+    tip.style.left = Math.min(Math.max(8, x + 14), wrap.width - tip.offsetWidth - 8) + 'px'; tip.style.top = Math.max(8, y - tip.offsetHeight - 12) + 'px';
+    showOi(S2); };
+  const hide = () => { tip.hidden = true; ['pfHov','pfHovE','pfHovT'].forEach(id => g(id).setAttribute('visibility', 'hidden')); showOi(PF.spot); };
+  g('pfHit').addEventListener('pointermove', move); g('pfHit').addEventListener('pointerleave', hide);
+  g('pfHit').addEventListener('click', ev => { const rc = svg.getBoundingClientRect(), px = (ev.clientX - rc.left) * W / rc.width; PF.spot = Math.round((lo + (px - pl) / (W - pl - pr) * (hi - lo)) / 5) * 5; drawPayoff(); });
+}
+
 function payoffSVG(st, m){
   const W = 800, H = 320, pl = 70, pr = 16, pt = 16, pb = 36;
   const span = Math.max((m.sigmaMove || m.step*4) * 2.4, m.step * 6);
@@ -1168,11 +1313,11 @@ function vBuilder(m, d){
       <div class="metric"><span class="k">Net gamma</span><span class="v">${nf(st.g.gamma,3)}</span><span class="s">delta change per pt</span></div>
     </div>` : '';
   return `<div style="display:flex;flex-direction:column;gap:14px">
-    <div class="panel"><div class="panel-head"><h2>Legs</h2><div class="actions"><button class="btn small" type="button" data-act="add">Add leg</button><button class="btn small" type="button" data-act="reset">Clear legs</button><button class="btn small primary" type="button" data-act="track">${getPos(S.idx) ? 'Track this position (replaces current)' : 'Track this position'}</button></div></div>
+    <div class="panel"><div class="panel-head"><h2>Legs</h2><div class="actions"><button class="btn small" type="button" data-act="add">Add leg</button><button class="btn small" type="button" data-act="reset">Clear legs</button><button class="btn small primary" type="button" data-act="track">${getPos(S.idx) ? 'Track as a new position' : 'Track this position'}</button></div></div>
     ${d.legs.length ? `<div class="tbl-wrap"><table class="legtbl"><thead><tr><th class="l">Side</th><th class="l">Type</th><th class="l">Strike</th><th class="l">Lots</th><th class="l">Entry premium</th><th>Engine IV</th><th></th></tr></thead><tbody>${legRows}</tbody></table></div>
       <p class="note" style="margin:8px 0 0">Entry premium starts at the file's LTP. Edit it to your actual fill.</p>${settleNote(d.legs, m.F, d.lot, S.idx)}` : '<p class="note">No legs yet. Add a leg or open a structure from the Strategies tab.</p>'}
     ${sum}</div>
-    ${st ? `<div class="panel"><div class="panel-head"><h2>Payoff</h2><div class="legend"><span><i style="background:var(--ink)"></i>At expiry</span><span><i style="background:var(--orange)"></i>Today (T+0, Black-76)</span><span>○ breakeven</span></div></div>${payoffSVG(st, m)}</div>` : ''}
+    ${st ? payoffPanel(st, m, d) : ''}
     ${st ? explainHTML(st, d.legs, m, d) : ''}
   </div>`;
 }
@@ -1270,9 +1415,22 @@ function explainHTML(st, legsIn, m, d){
 }
 
 /* ---------- position: tracking, what-if, gap check, sizing, payoff table, decay path ---------- */
-const posKey = i => 'pos.' + i;
-function getPos(i){ const p = store.get(posKey(i)); return p && Array.isArray(p.legs) && p.legs.length ? p : null; }
-function setPos(i, p){ store.set(posKey(i), p); }
+const POS = { list: (store.get('positions') || []).filter(p => p && Array.isArray(p.legs)) };
+const savePos = () => store.set('positions', POS.list);
+const openFor = sym => POS.list.filter(p => p.sym === sym && p.status === 'open');
+S.posSel = store.get('posSel') || {};
+function getPos(i){ const o = openFor(i); if (!o.length) return null; return o.find(x => x.id === S.posSel[i]) || o[o.length - 1]; }
+function setPos(i, p){
+  if (p == null){ const cur = getPos(i); if (cur) POS.list = POS.list.filter(x => x.id !== cur.id); savePos(); return; }
+  const k = POS.list.findIndex(x => x.id === p.id); if (k >= 0) POS.list[k] = p; else POS.list.push(p); savePos();
+}
+const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+function structName(legs, m){
+  const sig = ls => ls.map(l => `${l.side}${l.type}${l.K}x${l.lots || 1}`).sort().join('|');
+  const lotsMin = Math.min(...legs.map(l => l.lots)), norm = legs.map(l => ({...l, lots: l.lots / lotsMin}));
+  for (const w of [1,2,3,4]){ const t = ENG.templates(m, w).find(t => sig(t.legs) === sig(norm)); if (t) return t.name; }
+  return `Custom ${legs.length}-leg`;
+}
 const SIZ = { risk: +(store.get('risk') || 25000) };
 const WI = { spot:null, days:0, ivd:0, key:'', base: store.get('wibase') || 'file' };
 const sgnL = l => l.side === 'B' ? 1 : -1;
@@ -1286,10 +1444,10 @@ const normCdf = x => ENG.ncdf(x);
 
 function posMTM(p, m, lot){ return posLegs(p, m).reduce((a, l) => a + (l.now == null ? 0 : sgnL(l) * l.lots * lot * (l.now - l.entry)), 0); }
 function logPosSnap(i, d, m){
-  const p = getPos(i); if (!p || p.expiry !== d.expiry) return;
-  const h = (p.hist || []).filter(x => x.manual || x.asof !== d.asof);
-  h.push({ asof: d.asof, F: m.F, pl: posMTM(p, m, d.lot) });
-  h.sort((a, b) => a.asof < b.asof ? -1 : 1); p.hist = h.slice(-200); setPos(i, p);
+  openFor(i).forEach(p => { if (p.expiry !== d.expiry) return;
+    const h = (p.hist || []).filter(x => x.manual || x.asof !== d.asof);
+    h.push({ asof: d.asof, F: m.F, pl: posMTM(p, m, p.lot || d.lot) });
+    h.sort((a, b) => a.asof < b.asof ? -1 : 1); p.hist = h.slice(-200); setPos(i, p); });
 }
 function posUploader(p, d){
   return `<div class="panel upd"><div class="panel-head" style="margin:0"><div><h2>Update prices</h2>
@@ -1334,7 +1492,7 @@ async function loadPosFiles(list){
   if (!parsed.length) return;
   const asIn = document.getElementById('posAsof');
   d.files = {}; parsed.forEach(([n, x]) => d.files[x.fmt] = { name: n, ...x });
-  d.sample = false; d.expiry = p.expiry; d.asof = (asIn && asIn.value) || localDT(new Date());
+  d.sample = false; d.expiry = p.expiry; d.asof = (asIn && asIn.value) || localDT(new Date()); d.lastSnap = null;
   recompute(); render();
   if (d.err) toast(d.err);
   else { const h = (getPos(S.idx).hist || []); const last = h[h.length - 1]; toast(`Prices updated to ${dateTxt(d.asof)}. P&L ${last ? rupee(last.pl) : ''}.`); }
@@ -1348,14 +1506,42 @@ function settleNote(legs, F, lot, ix){
 }
 
 function vPosition(m, d){
+  const o = openFor(S.idx), p = getPos(S.idx);
+  const picker = o.length > 1 || (o.length && S.closing) ? `<div class="panel"><div class="filters"><span class="note" style="margin-right:4px">Open ${S.idx} positions</span>${o.map(x => `<button type="button" class="pill" data-act="possel" data-val="${x.id}" aria-pressed="${p && x.id === p.id}">${esc(x.name || 'Position')} · ${esc(dateTxt(x.expiry))}</button>`).join('')}<span class="note">Add another from the Strategy builder with <b>Track as a new position</b>.</span></div></div>` : '';
+  const closing = p && S.closing ? closeForm(p, m, d) : '';
+  return `<div style="display:flex;flex-direction:column;gap:14px">${picker}${closing}${vPositionOne(m, d)}</div>`;
+}
+function closeForm(p, m, d){
+  const L = p.expiry === d.expiry ? posLegs(p, m) : p.legs.map(l => ({...l, now:null}));
+  const lot = p.lot || d.lot, mp = p.manual || {};
+  const pre = l => p.mode === 'manual' && mp[l.type + l.K] != null ? mp[l.type + l.K] : l.now != null ? l.now : l.entry;
+  return `<div class="panel closef"><div class="panel-head" style="margin:0"><div><h2>Close ${esc(p.name || 'position')}</h2><p class="note" style="margin:4px 0 0">Enter the price you exited each leg at. The trade moves to the Journal with its realised P&amp;L.</p></div></div>
+    <div class="tbl-wrap" style="margin-top:10px"><table><thead><tr><th class="l">Leg</th><th>Lots</th><th>Entry</th><th>Exit price</th><th>Realised</th></tr></thead><tbody>
+    ${L.map((l, i) => `<tr><td class="l">${l.side === 'B' ? 'Buy' : 'Sell'} ${nf(l.K)} ${l.type}</td><td>${l.lots}</td><td>${nf(l.entry,2)}</td><td><input type="number" class="mprice" id="ex${i}" data-ex="${i}" min="0" step="0.05" value="${pre(l)}" aria-label="Exit price ${nf(l.K)} ${l.type}"></td><td id="exr${i}"></td></tr>`).join('')}
+    </tbody></table></div>
+    <div class="updrow"><div class="field"><label for="exAt">Closed at</label><input type="datetime-local" id="exAt" value="${localDT(new Date())}"></div>
+      <div class="field"><label for="exNote">Note (optional)</label><input type="text" id="exNote" maxlength="140" placeholder="e.g. exited at target"></div>
+      <div class="exsum">Realised P&amp;L <b id="exTot" class="rnum"></b></div>
+      <button class="btn primary" type="button" data-act="closeconfirm">Close and record</button><button class="btn" type="button" data-act="closecancel">Cancel</button></div></div>`;
+}
+function closeCalc(){
+  const d = S.data[S.idx], p = getPos(S.idx); if (!p) return null; const lot = p.lot || d.lot; let tot = 0; const ex = {};
+  p.legs.forEach((l, i) => { const el = document.getElementById('ex' + i); if (!el) return; const v = parseFloat(el.value); const ok = isFinite(v) && v >= 0;
+    const r = ok ? Math.round(sgnL(l) * l.lots * lot * (v - l.entry) * 100) / 100 : 0; tot += r; ex[l.type + l.K] = ok ? v : null;
+    const c = document.getElementById('exr' + i); if (c){ c.textContent = ok ? rupee(r) : '–'; c.className = cls(r); } });
+  tot = Math.round(tot * 100) / 100;
+  const t = document.getElementById('exTot'); if (t){ t.textContent = rupee(tot); t.className = 'rnum ' + cls(tot); }
+  return { tot, ex };
+}
+function vPositionOne(m, d){
   const p = getPos(S.idx);
   if (!p) return `<div class="empty"><h2>No ${S.idx} position tracked</h2>
     <p>Build the position in the Strategy builder, set each leg's entry premium to your actual fill, then press <b>Track this position</b>. Each later upload of the same expiry then updates its live P&L automatically, and this tab adds what-if scenarios, a next-session gap check, position sizing, a payoff table and the decay path.</p>
     <button class="btn primary" type="button" data-act="track">Track the current builder legs</button></div>`;
-  const lot = d.lot, same = p.expiry === d.expiry;
+  const lot = p.lot || d.lot, same = p.expiry === d.expiry;
   if (!same) return `<div class="empty"><h2>Tracked position is for expiry ${esc(dateTxt(p.expiry))}</h2>
     <p>The loaded ${S.idx} chain is for ${esc(dateTxt(d.expiry))}. Load a chain for ${esc(dateTxt(p.expiry))} below to update this position, or stop tracking it.</p>
-    <div class="actions"><button class="btn" type="button" data-act="untrack">${S.untrackArm ? 'Click again to stop tracking' : 'Stop tracking'}</button></div></div>${posUploader(p, d)}`;
+    <div class="actions"><button class="btn" type="button" data-act="untrack">${S.untrackArm ? 'Click again to delete' : 'Delete (no journal entry)'}</button></div></div>${posUploader(p, d)}`;
   const L = posLegs(p, m), T = m.T, F = m.F;
   const st = ENG.strat(L, m, lot);
   const manual = p.mode === 'manual', mp = p.manual || {}, mkey = l => l.type + l.K;
@@ -1369,7 +1555,7 @@ function vPosition(m, d){
     return `<tr><td class="l"><span class="${l.side === 'B' ? 'pos' : 'neg'}"><b>${l.side === 'B' ? 'Buy' : 'Sell'}</b></span> ${nf(l.K)} ${l.type}</td><td>${l.lots}</td><td>${nf(l.entry,2)}</td><td>${nowCell}</td><td id="mc${i}">${v == null ? '–' : sgn(v - l.entry, x => nf(x,2))}</td><td id="mpl${i}" class="${cls(pl)}">${pl == null ? '–' : rupee(pl)}</td><td>${manual ? (l.now == null ? '–' : nf(l.now,2)) : pctv(l.iv,2)}</td></tr>`; }).join('');
   const src = manual ? `prices entered by you${p.manualAt ? ` · last edited ${esc(dateTxt(p.manualAt))}` : ''}` : `prices from data at ${esc(dateTxt(d.asof))}`;
   const track = `<div class="panel"><div class="panel-head"><div><h2>Live P&amp;L</h2><p class="note" style="margin:4px 0 0">Tracked since ${esc(dateTxt(p.openedAt))} · ${src} · lot size ${lot}</p></div>
-      <div class="actions"><button class="btn small" type="button" data-act="track">Re-track from builder</button><button class="btn small" type="button" data-act="untrack">${S.untrackArm ? 'Click again to stop tracking' : 'Stop tracking'}</button></div></div>
+      <div class="actions"><button class="btn small" type="button" data-act="retrack">Replace legs from builder</button><button class="btn small primary" type="button" data-act="closeform">Close position</button><button class="btn small" type="button" data-act="untrack">${S.untrackArm ? 'Click again to delete' : 'Delete (no journal entry)'}</button></div></div>
     <div class="filters" style="margin-bottom:12px"><span class="note" style="margin-right:4px">Prices from</span><button type="button" class="pill" data-act="pmode" data-val="file" aria-pressed="${!manual}">Latest file</button><button type="button" class="pill" data-act="pmode" data-val="manual" aria-pressed="${manual}">Manual entry</button></div>
     <div class="metrics" style="grid-template-columns:repeat(4,minmax(0,1fr))">
       <div class="metric"><span class="k">P&amp;L now</span><span class="v ${cls(mtm)}" id="mtmV">${rupee(mtm)}</span><span class="s">${manual ? 'from your prices' : sameData ? 'same data as entry' : 'at latest upload'}</span></div>
@@ -1493,12 +1679,241 @@ function updateWhatIf(src){
     ${L.map(l => { const v = legVal(l, sp, Tl, iv), lp = sgnL(l) * l.lots * lot * (v - l.entry), b0 = wb.kind === 'manual' ? l.live : l.now; return `<tr><td class="l">${l.side === 'B' ? 'Buy' : 'Sell'} ${l.lots > 1 ? l.lots + '× ' : ''}${nf(l.K)} ${l.type}</td><td>${nf(l.entry,2)}</td><td>${b0 == null ? '–' : nf(b0,2)}</td><td>${nf(v,2)}</td><td class="${cls(lp)}">${rupee(lp)}</td></tr>`; }).join('')}
     </tbody></table></div>`;
 }
-function trackFromBuilder(d){
+function trackFromBuilder(d, replace){
   if (!d.legs || !d.legs.length){ toast('Add legs in the Strategy builder first.'); return false; }
-  const had = !!getPos(S.idx);
-  setPos(S.idx, { legs: d.legs.map(l => ({ side:l.side, type:l.type, K:l.K, lots:l.lots, entry:+l.prem, ivEntry:l.iv })), expiry: d.expiry, openedAt: d.asof });
-  WI.key = ''; if (d.m) logPosSnap(S.idx, d, d.m); toast(had ? 'Position replaced with the builder legs.' : 'Position tracked. Upload newer data of this expiry to follow it.');
+  const legs = d.legs.map(l => ({ side:l.side, type:l.type, K:l.K, lots:l.lots, entry:+l.prem, ivEntry:l.iv }));
+  const st = d.m ? ENG.strat(d.legs, d.m, d.lot) : null;
+  const base = { legs, expiry: d.expiry, openedAt: d.asof, lot: d.lot, name: d.m ? structName(legs, d.m) : 'Position',
+    entry: st ? { net: st.net, maxLoss: isFinite(st.maxLoss) ? st.maxLoss : null, maxProfit: isFinite(st.maxProfit) ? st.maxProfit : null, pop: st.pop } : null };
+  const cur = replace ? getPos(S.idx) : null;
+  const p = cur ? { ...cur, ...base, hist: [], manual: {}, manualSpot: null } : { id: newId(), sym: S.idx, status: 'open', created: localDT(new Date()), ...base, hist: [] };
+  setPos(S.idx, p); S.posSel[S.idx] = p.id; store.set('posSel', S.posSel);
+  WI.key = ''; if (d.m) logPosSnap(S.idx, d, d.m);
+  toast(cur ? 'Position legs replaced from the builder.' : `${p.name} tracked. Upload newer data of this expiry to follow it.`);
   return true;
+}
+
+/* ===================== Pro: snapshots, OI shift, journal, scorecard, backup ===================== */
+const snapKey = (i, e) => `snaps.${i}.${e}`;
+function getSnaps(i, e){ const a = store.get(snapKey(i, e)); return Array.isArray(a) ? a : []; }
+function saveSnap(i, d, m){
+  if (d.sample || !d.expiry) return;
+  const a = getSnaps(i, d.expiry).filter(x => x.asof !== d.asof);
+  a.push({ asof: d.asof, F: +m.F.toFixed(2), pcr: m.pcrOi, pcrV: m.pcrVol, straddle: m.straddle, sm: m.sigmaMove, iv: m.atmIV, atm: m.atm,
+    maxPain: m.maxPain, cw: m.callWall, pw: m.putWall, sup: m.putZone ? Math.min(...m.putZone.ks) : null, res: m.callZone ? Math.max(...m.callZone.ks) : null,
+    rows: m.rows.map(r => [r.strike, r.ce.oi ?? null, r.pe.oi ?? null, r.ce.ltp ?? null, r.pe.ltp ?? null, r.ce.vol ?? null, r.pe.vol ?? null, r.ce.chgOi ?? null, r.pe.chgOi ?? null, r.ce.build || null, r.pe.build || null]) });
+  a.sort((x, y) => x.asof < y.asof ? -1 : 1);
+  store.set(snapKey(i, d.expiry), a.slice(-60)); d.lastSnap = { e: d.expiry, asof: d.asof };
+  const idx = store.get('snapIndex') || {}; idx[i] = idx[i] || []; if (!idx[i].includes(d.expiry)) idx[i].push(d.expiry); store.set('snapIndex', idx);
+}
+function latestSnap(sym, liveOnly){
+  const idx = store.get('snapIndex') || {}, now = new Date(); let best = null;
+  (idx[sym] || []).forEach(e => { if (liveOnly && new Date(e + 'T15:30') < now) return; const a = getSnaps(sym, e); const x = a[a.length - 1]; if (x && (!best || x.asof > best.snap.asof)) best = { e, snap: x }; });
+  return best;
+}
+function reopenSnap(sym, e, snap){
+  const d = ensureData(sym);
+  const side = (r, o) => ({ oi: r[1 + o], ltp: r[3 + o], vol: r[5 + o], chgOi: r[7 + o] ?? null, prevOi: r[1 + o] != null && r[7 + o] != null ? r[1 + o] - r[7 + o] : null, chgOiPct: null, iv: null, delta: null, gamma: null, theta: null, vega: null, open: null, high: null, low: null, build: r[9 + o] || null });
+  d.files = { snake: { name: 'saved upload', fmt: 'snake', dropped: 0, reopened: true, rows: snap.rows.map(r => ({ strike: r[0], ce: side(r, 0), pe: side(r, 1) })) } };
+  d.sample = false; d.expiry = e; d.asof = snap.asof; d.legs = null; d.m = null; d.err = null;
+}
+const tmTxt = s => new Date(s).toLocaleString('en-IN', {day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit', hour12:false});
+const readOf = (dp, doi) => doi > 0 ? (dp >= 0 ? 'Fresh buying' : 'Fresh selling') : doi < 0 ? (dp >= 0 ? 'Sellers exiting' : 'Buyers exiting') : '–';
+
+/* ---------- OI shift ---------- */
+function vShift(m, d){
+  const a = getSnaps(S.idx, d.expiry);
+  if (a.length < 2) return `<div class="empty"><h2>OI shift needs two uploads of this expiry</h2>
+    <p>Every ${S.idx} upload for ${esc(dateTxt(d.expiry))} is saved as a snapshot (${a.length} so far). Upload a later export of the same expiry, for example at 10:15 and again at 14:30, and this tab compares any two: OI change per strike, what traders did at each strike, how PCR moved and whether the walls shifted.</p></div>`;
+  const ids = a.map(x => x.asof);
+  let to = ids.includes(S.shTo) ? S.shTo : ids[ids.length - 1];
+  let from = ids.includes(S.shFrom) && S.shFrom < to ? S.shFrom : (() => { const day = to.slice(0, 10), same = ids.filter(x => x.slice(0, 10) === day && x < to); return same.length ? same[0] : ids[ids.indexOf(to) - 1]; })();
+  const A = a.find(x => x.asof === from), B = a.find(x => x.asof === to);
+  const map = s => Object.fromEntries(s.rows.map(r => [r[0], r]));
+  const ma = map(A), mb = map(B), ks = [...new Set([...A.rows.map(r => r[0]), ...B.rows.map(r => r[0])])].sort((x, y) => x - y);
+  const D = ks.map(k => { const x = ma[k], y = mb[k]; const df = (j) => x && y && x[j] != null && y[j] != null ? y[j] - x[j] : null;
+    return { k, dco: df(1), dpo: df(2), dcp: df(3), dpp: df(4), co: y ? y[1] : null, po: y ? y[2] : null }; });
+  const sum = f => D.reduce((s, r) => s + (r[f] || 0), 0);
+  const tc = sum('dco'), tp = sum('dpo');
+  const topC = [...D].filter(r => r.dco > 0).sort((x, y) => y.dco - x.dco).slice(0, 3), topP = [...D].filter(r => r.dpo > 0).sort((x, y) => y.dpo - x.dpo).slice(0, 3);
+  const cutC = [...D].filter(r => r.dco < 0).sort((x, y) => x.dco - y.dco)[0], cutP = [...D].filter(r => r.dpo < 0).sort((x, y) => x.dpo - y.dpo)[0];
+  const ch = (x, y, f = v => nf(v)) => x === y ? `${f(y)} <span class="mut">(unchanged)</span>` : `${f(x)} → <b>${f(y)}</b>`;
+  const lines = [];
+  lines.push(`${S.idx} moved ${sgn(B.F - A.F, v => nf(v))} points (${nf(A.F)} → ${nf(B.F)}).`);
+  lines.push(`Call OI ${tc >= 0 ? 'added' : 'cut'} ${lakh(Math.abs(tc))}, put OI ${tp >= 0 ? 'added' : 'cut'} ${lakh(Math.abs(tp))}: ${Math.abs(tp) > Math.abs(tc) * 1.3 ? (tp > 0 ? 'put writers were the more active side' : 'put positions were being closed faster') : Math.abs(tc) > Math.abs(tp) * 1.3 ? (tc > 0 ? 'call writers were the more active side' : 'call positions were being closed faster') : 'both sides changed by a similar amount'}.`);
+  if (topC.length) lines.push(`Biggest call additions: ${topC.map(r => `${nf(r.k)} (+${lakh(r.dco)}, ${readOf(r.dcp, r.dco).toLowerCase()})`).join(', ')}.`);
+  if (topP.length) lines.push(`Biggest put additions: ${topP.map(r => `${nf(r.k)} (+${lakh(r.dpo)}, ${readOf(r.dpp, r.dpo).toLowerCase()})`).join(', ')}.`);
+  if (cutC || cutP) lines.push(`Largest unwinding: ${[cutC ? `${nf(cutC.k)} CE (${lakh(cutC.dco)})` : '', cutP ? `${nf(cutP.k)} PE (${lakh(cutP.dpo)})` : ''].filter(Boolean).join(', ')}.`);
+  if (A.cw !== B.cw || A.pw !== B.pw) lines.push(`Walls moved: ${A.cw !== B.cw ? `call wall ${nf(A.cw)} → ${nf(B.cw)}` : ''}${A.cw !== B.cw && A.pw !== B.pw ? '; ' : ''}${A.pw !== B.pw ? `put wall ${nf(A.pw)} → ${nf(B.pw)}` : ''}.`);
+  else lines.push(`Call wall ${nf(B.cw)} and put wall ${nf(B.pw)} held their place.`);
+  // chart
+  const W = 820, H = 260, pl = 64, pr = 12, pt = 14, pb = 34;
+  const mx = Math.max(1, ...D.map(r => Math.max(Math.abs(r.dco || 0), Math.abs(r.dpo || 0))));
+  const slot = (W - pl - pr) / ks.length, bw = Math.min(slot * 0.36, 14), y0 = pt + (H - pt - pb) / 2, Y = v => y0 - v / mx * (H - pt - pb) / 2;
+  const every = Math.ceil(ks.length / 12), yt = [-mx, -mx/2, 0, mx/2, mx];
+  const fx = v => pl + (v - ks[0]) / ((ks[ks.length-1] - ks[0]) || 1) * (slot * (ks.length - 1)) + slot / 2;
+  const svg = `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="OI change by strike">
+    ${yt.map(v => `<line x1="${pl}" x2="${W-pr}" y1="${Y(v)}" y2="${Y(v)}" stroke="${v === 0 ? 'var(--muted)' : 'var(--line-2)'}"/><text x="${pl-6}" y="${Y(v)+4}" text-anchor="end">${v === 0 ? '0' : sgn(v, lakh)}</text>`).join('')}
+    ${D.map((r, i) => { const xm = pl + slot*i + slot/2; const bar = (v, x, c) => v == null ? '' : `<rect x="${x.toFixed(1)}" y="${Math.min(Y(v), y0).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.abs(Y(v) - y0).toFixed(1)}" fill="${c}"/>`;
+      return bar(r.dco, xm - bw - 1, 'var(--ce)') + bar(r.dpo, xm + 1, 'var(--pe)') + (i % every === 0 ? `<text x="${xm}" y="${H-12}" text-anchor="middle">${nf(r.k)}</text>` : ''); }).join('')}
+    <line x1="${fx(B.F)}" x2="${fx(B.F)}" y1="${pt}" y2="${H-pb}" stroke="var(--orange)" stroke-dasharray="4 3"/><text x="${fx(B.F)+4}" y="${pt+10}" class="lbl">${S.idx} ${nf(B.F)}</text>
+  </svg>`;
+  // trend across all snapshots
+  const tW = 820, tH = 150, tp0 = 12, tb = 28, tl = 64, tr = 64;
+  const pcrs = a.map(x => x.pcr), Fs = a.map(x => x.F);
+  const pmn = Math.min(...pcrs), pmx = Math.max(...pcrs), fmn = Math.min(...Fs), fmx = Math.max(...Fs);
+  const TX = i => tl + i / Math.max(1, a.length - 1) * (tW - tl - tr), PY = v => tp0 + (1 - (v - pmn) / ((pmx - pmn) || 1)) * (tH - tp0 - tb), FY = v => tp0 + (1 - (v - fmn) / ((fmx - fmn) || 1)) * (tH - tp0 - tb);
+  const trend = `<svg class="chart" viewBox="0 0 ${tW} ${tH}" role="img" aria-label="PCR and index level across snapshots">
+    <text x="${tl-6}" y="${PY(pmx)+4}" text-anchor="end">${nf(pmx,2)}</text><text x="${tl-6}" y="${PY(pmn)+4}" text-anchor="end">${nf(pmn,2)}</text>
+    <text x="${tW-tr+6}" y="${FY(fmx)+4}">${nf(fmx)}</text><text x="${tW-tr+6}" y="${FY(fmn)+4}">${nf(fmn)}</text>
+    <polyline fill="none" stroke="var(--ink)" stroke-width="2" points="${a.map((x, i) => TX(i).toFixed(1) + ',' + PY(x.pcr).toFixed(1)).join(' ')}"/>
+    <polyline fill="none" stroke="var(--orange)" stroke-width="1.8" stroke-dasharray="5 4" points="${a.map((x, i) => TX(i).toFixed(1) + ',' + FY(x.F).toFixed(1)).join(' ')}"/>
+    ${a.map((x, i) => `<circle cx="${TX(i)}" cy="${PY(x.pcr)}" r="3" fill="${x.asof === from || x.asof === to ? 'var(--green)' : 'var(--ink)'}"/>${i % Math.ceil(a.length / 8) === 0 || i === a.length - 1 ? `<text x="${TX(i)}" y="${tH-8}" text-anchor="middle">${tmTxt(x.asof)}</text>` : ''}`).join('')}
+  </svg>`;
+  const opt = sel => a.map(x => `<option value="${x.asof}" ${x.asof === sel ? 'selected' : ''}>${tmTxt(x.asof)} · ${S.idx} ${nf(x.F)}</option>`).join('');
+  const tbl = D.map(r => `<tr class="${r.k === m.atm ? 'atm0' : ''}"><td class="${cls(r.dco)}">${r.dco == null ? '–' : sgn(r.dco, lakh)}</td><td class="${cls(r.dcp)}">${r.dcp == null ? '–' : sgn(r.dcp, v => nf(v,2))}</td><td class="l">${r.dco == null ? '–' : bu2(readOf(r.dcp, r.dco))}</td>
+    <td class="k">${nf(r.k)}</td><td class="l">${r.dpo == null ? '–' : bu2(readOf(r.dpp, r.dpo))}</td><td class="${cls(r.dpp)}">${r.dpp == null ? '–' : sgn(r.dpp, v => nf(v,2))}</td><td class="${cls(r.dpo)}">${r.dpo == null ? '–' : sgn(r.dpo, lakh)}</td></tr>`).join('');
+  return `<div style="display:flex;flex-direction:column;gap:14px">
+    <div class="panel"><div class="panel-head"><div><h2>OI shift between two snapshots</h2><p class="note" style="margin:4px 0 0">${a.length} snapshots saved for ${S.idx} expiry ${esc(dateTxt(d.expiry))}. Pick any two.</p></div></div>
+      <div class="updrow" style="margin:0 0 12px"><div class="field"><label for="shFrom">From</label><select id="shFrom">${opt(from)}</select></div><div class="field"><label for="shTo">To</label><select id="shTo">${opt(to)}</select></div></div>
+      <div class="metrics">
+        <div class="metric"><span class="k">${S.idx} level</span><span class="v">${sgn(B.F - A.F, v => nf(v))}</span><span class="s">${nf(A.F)} → ${nf(B.F)}</span></div>
+        <div class="metric"><span class="k">PCR (OI)</span><span class="v">${nf(B.pcr,2)}</span><span class="s">from ${nf(A.pcr,2)}</span></div>
+        <div class="metric"><span class="k">Call OI change</span><span class="v ce">${sgn(tc, lakh)}</span></div>
+        <div class="metric"><span class="k">Put OI change</span><span class="v pe">${sgn(tp, lakh)}</span></div>
+        <div class="metric"><span class="k">ATM IV</span><span class="v">${pctv(B.iv,2)}</span><span class="s">from ${pctv(A.iv,2)}</span></div>
+        <div class="metric"><span class="k">Call wall</span><span class="v ce" style="font-size:16px">${ch(A.cw, B.cw)}</span></div>
+        <div class="metric"><span class="k">Put wall</span><span class="v pe" style="font-size:16px">${ch(A.pw, B.pw)}</span></div>
+        <div class="metric"><span class="k">Max pain</span><span class="v" style="font-size:16px">${ch(A.maxPain, B.maxPain)}</span></div>
+        <div class="metric"><span class="k">Straddle</span><span class="v">₹${nf(B.straddle,2)}</span><span class="s">from ₹${nf(A.straddle,2)}</span></div>
+        <div class="metric"><span class="k">Time apart</span><span class="v">${(() => { const h = (new Date(to) - new Date(from)) / 36e5; return h >= 24 ? nf(h/24,1) + ' days' : nf(h,1) + ' h'; })()}</span></div>
+      </div>
+      <h3 class="rsec">What changed</h3><ul class="qlist" style="margin-top:8px">${lines.map(x => `<li>${x}</li>`).join('')}</ul></div>
+    <div class="panel"><div class="panel-head"><h2>OI change by strike</h2><div class="legend"><span><i style="background:var(--ce)"></i>Call OI change</span><span><i style="background:var(--pe)"></i>Put OI change</span></div></div>${svg}</div>
+    <div class="tbl-wrap"><table><thead><tr class="grp"><th colspan="3" class="ceh l">Calls</th><th></th><th colspan="3" class="peh" style="text-align:right">Puts</th></tr>
+      <tr><th>OI change</th><th>Price change</th><th class="l">What traders did</th><th style="text-align:center">Strike</th><th class="l">What traders did</th><th>Price change</th><th>OI change</th></tr></thead><tbody>${tbl}</tbody></table></div>
+    <div class="panel"><div class="panel-head"><h2>PCR and ${S.idx} across all snapshots</h2><div class="legend"><span><i style="background:var(--ink)"></i>PCR (left)</span><span><i style="background:var(--orange)"></i>${S.idx} (right)</span></div></div>${trend}</div>
+  </div>`;
+}
+const bu2 = t => t === '–' ? '<span class="mut">–</span>' : `<span class="bu ${t === 'Fresh buying' ? 'lb' : t === 'Fresh selling' ? 'sb' : t === 'Sellers exiting' ? 'sc' : 'lu'}">${t}</span>`;
+
+/* ---------- Journal & portfolio ---------- */
+function posNow(p){
+  const d = S.data[p.sym]; if (d && !d.m && !d.err && Object.keys(d.files).length) recompute(p.sym);
+  const m = d && !d.sample && d.m, lot = p.lot || (d && d.lot);
+  if (m && d.expiry === p.expiry){
+    const L = posLegs(p, m), mp = p.manual || {}, man = p.mode === 'manual';
+    const pl = L.reduce((a, l) => { const v = man && mp[l.type + l.K] != null ? mp[l.type + l.K] : l.now; return a + (v == null ? 0 : sgnL(l) * l.lots * lot * (v - l.entry)); }, 0);
+    const st = ENG.strat(L, m, lot);
+    return { pl, at: man && p.manualAt ? p.manualAt : d.asof, src: man ? 'your prices' : 'file', g: st.g, F: m.F };
+  }
+  const h = (p.hist || []); const last = h[h.length - 1];
+  return last ? { pl: last.pl, at: last.asof, src: 'last saved', g: null } : { pl: null, at: null, src: '', g: null };
+}
+function vJournal(m, d){
+  const open = POS.list.filter(p => p.status === 'open'), closed = POS.list.filter(p => p.status === 'closed').sort((a, b) => (b.closedAt || '') < (a.closedAt || '') ? -1 : 1);
+  const rows = open.map(p => ({ p, n: posNow(p) }));
+  const tot = rows.reduce((a, r) => a + (r.n.pl || 0), 0), th = rows.reduce((a, r) => a + (r.n.g ? r.n.g.theta : 0), 0), vg = rows.reduce((a, r) => a + (r.n.g ? r.n.g.vega : 0), 0);
+  const missG = rows.filter(r => !r.n.g).length;
+  const port = open.length ? `<div class="tbl-wrap"><table><thead><tr><th class="l">Underlying</th><th class="l">Position</th><th class="l">Expiry</th><th>P&amp;L now</th><th class="l">As of</th><th>Delta (₹/pt)</th><th>Theta (₹/day)</th><th>Vega (₹/IV pt)</th><th></th></tr></thead><tbody>
+      ${rows.map(({p, n}) => `<tr><td class="l"><b>${esc(p.sym)}</b></td><td class="l">${esc(p.name || 'Position')}<div class="mut" style="font-size:11.5px">${p.legs.map(l => `${l.side}${l.lots > 1 ? l.lots + '×' : ''} ${nf(l.K)} ${l.type}`).join(' · ')}</div></td><td class="l">${esc(dateTxt(p.expiry))}</td>
+        <td class="${cls(n.pl)}">${n.pl == null ? '–' : rupee(n.pl)}</td><td class="l mut">${n.at ? tmTxt(n.at) + ' · ' + n.src : '–'}</td><td>${n.g ? nf(n.g.delta,1) : '–'}</td><td class="${n.g ? cls(n.g.theta) : ''}">${n.g ? rupee(n.g.theta) : '–'}</td><td>${n.g ? rupee(n.g.vega) : '–'}</td>
+        <td><button class="btn small" type="button" data-act="gopos" data-sym="${esc(p.sym)}" data-val="${p.id}">Open</button></td></tr>`).join('')}
+      <tr class="atm0"><td class="l" colspan="3">Total (${open.length} open)</td><td class="${cls(tot)}">${rupee(tot)}</td><td></td><td class="mut">not added</td><td class="${cls(th)}">${rupee(th)}</td><td>${rupee(vg)}</td><td></td></tr></tbody></table></div>
+      <p class="note" style="margin:8px 0 0">Delta is in ₹ per point of each position's own underlying, so it is not added across different underlyings. Theta and vega are in ₹ and do add up.${missG ? ` ${missG} position${missG > 1 ? 's have' : ' has'} no chain of its expiry loaded, so its Greeks are blank and its P&amp;L is the last saved value.` : ''}</p>`
+    : '<p class="note">No open positions. Track one from the Strategy builder.</p>';
+  // stats
+  const R = closed.map(p => p.realized || 0), wins = R.filter(x => x > 0), losses = R.filter(x => x < 0);
+  const Rm = closed.filter(p => p.entry && p.entry.maxLoss).map(p => p.realized / Math.abs(p.entry.maxLoss));
+  const days = closed.map(p => (new Date(p.closedAt) - new Date(p.openedAt)) / 864e5).filter(x => isFinite(x));
+  const avg = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : null;
+  const st = (k, v, s, c = '') => `<div class="metric"><span class="k">${k}</span><span class="v ${c}">${v}</span>${s ? `<span class="s">${s}</span>` : ''}</div>`;
+  const stats = closed.length ? `<div class="metrics">
+    ${st('Closed trades', closed.length, `${wins.length} won · ${losses.length} lost${closed.length - wins.length - losses.length ? ` · ${closed.length - wins.length - losses.length} flat` : ''}`)}
+    ${st('Win rate', pctv(wins.length / closed.length, 0))}
+    ${st('Total realised', rupee(R.reduce((a, b) => a + b, 0)), '', cls(R.reduce((a, b) => a + b, 0)))}
+    ${st('Average win', wins.length ? rupee(avg(wins)) : '–', '', 'pe')}
+    ${st('Average loss', losses.length ? rupee(avg(losses)) : '–', '', 'ce')}
+    ${st('Win/loss size', wins.length && losses.length ? nf(avg(wins) / Math.abs(avg(losses)), 2) + '×' : '–', 'average win ÷ average loss')}
+    ${st('Average R', Rm.length ? sgn(avg(Rm), v => nf(v, 2)) + 'R' : '–', 'realised ÷ max loss at entry')}
+    ${st('Best / worst', `${rupee(Math.max(...R))} / ${rupee(Math.min(...R))}`)}
+    ${st('Average holding', days.length ? nf(avg(days), 1) + ' days' : '–')}
+    ${st('Expectancy', rupee(avg(R)), 'average realised per trade')}
+  </div>` : '';
+  const ctable = closed.length ? `<div class="tbl-wrap"><table><thead><tr><th class="l">Closed</th><th class="l">Underlying</th><th class="l">Position</th><th class="l">Expiry</th><th>Entry net</th><th>Max loss at entry</th><th>Realised</th><th>R</th><th class="l">Note</th><th></th></tr></thead><tbody>
+    ${closed.map(p => `<tr><td class="l">${tmTxt(p.closedAt)}</td><td class="l"><b>${esc(p.sym)}</b></td><td class="l">${esc(p.name || '')}<div class="mut" style="font-size:11.5px">${p.legs.map(l => `${l.side}${l.lots > 1 ? l.lots + '×' : ''} ${nf(l.K)} ${l.type} ${nf(l.entry,2)}→${p.exit && p.exit[l.type + l.K] != null ? nf(p.exit[l.type + l.K],2) : '–'}`).join(' · ')}</div></td><td class="l">${esc(dateTxt(p.expiry))}</td>
+      <td>${p.entry ? rupee(p.entry.net) : '–'}</td><td>${p.entry && p.entry.maxLoss != null ? rupee(p.entry.maxLoss) : 'Unlimited'}</td><td class="${cls(p.realized)}"><b>${rupee(p.realized)}</b></td><td>${p.entry && p.entry.maxLoss ? sgn(p.realized / Math.abs(p.entry.maxLoss), v => nf(v,2)) + 'R' : '–'}</td><td class="l" style="white-space:normal;max-width:220px">${esc(p.note || '')}</td>
+      <td><button class="btn small" type="button" data-act="deltrade" data-val="${p.id}">${S.armDel === p.id ? 'Click again' : 'Delete'}</button></td></tr>`).join('')}
+    </tbody></table></div>` : '<p class="note">No closed trades yet. Use <b>Close position</b> in the Position tab to record one.</p>';
+  return `<div style="display:flex;flex-direction:column;gap:14px">
+    <div class="panel"><div class="panel-head"><div><h2>Portfolio</h2><p class="note" style="margin:4px 0 0">All open positions across underlyings.</p></div></div>${port}</div>
+    <div class="panel"><div class="panel-head"><div><h2>Trade journal</h2><p class="note" style="margin:4px 0 0">Closed trades with realised P&amp;L. R = realised ÷ max loss at entry (defined-risk trades only).</p></div>
+      ${closed.length ? `<div class="actions"><button class="btn small" type="button" data-act="journalcsv">Download journal (CSV)</button></div>` : ''}</div>${stats}<div style="margin-top:12px">${ctable}</div></div>
+    ${backupPanel()}</div>`;
+}
+function journalCSV(){
+  const q = v => { const s = v == null ? '' : String(v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+  const out = [['Opened','Closed','Underlying','Position','Expiry','Legs (entry→exit)','Lot size','Entry net','Max loss at entry','Realised','R','Note'].join(',')];
+  POS.list.filter(p => p.status === 'closed').forEach(p => out.push([p.openedAt, p.closedAt, p.sym, p.name, p.expiry,
+    p.legs.map(l => `${l.side === 'B' ? 'Buy' : 'Sell'} ${l.lots}x ${l.K} ${l.type} ${l.entry}->${p.exit ? p.exit[l.type + l.K] : ''}`).join(' | '), p.lot,
+    p.entry ? p.entry.net.toFixed(2) : '', p.entry && p.entry.maxLoss != null ? p.entry.maxLoss.toFixed(2) : 'Unlimited', (p.realized || 0).toFixed(2),
+    p.entry && p.entry.maxLoss ? (p.realized / Math.abs(p.entry.maxLoss)).toFixed(2) : '', p.note || ''].map(q).join(',')));
+  saveFile(`STWP_trade_journal_${localDT(new Date()).slice(0, 10).replace(/-/g, '')}.csv`, '﻿' + out.join('\r\n'));
+}
+
+/* ---------- Expiry scorecard ---------- */
+function vScore(){
+  const idx = store.get('snapIndex') || {}, settle = store.get('settle') || {}, now = new Date();
+  const items = [];
+  Object.entries(idx).forEach(([sym, exps]) => exps.forEach(e => { if (new Date(e + 'T15:30') < now){ const a = getSnaps(sym, e); if (a.length) items.push({ sym, e, ref: a[a.length - 1], n: a.length }); } }));
+  items.sort((x, y) => x.e < y.e ? 1 : -1);
+  if (!items.length) return `<div class="empty"><h2>No finished expiries yet</h2><p>After an expiry passes, every expiry you uploaded chains for appears here. Enter where the underlying settled and the tool scores what the chain showed: the straddle range, the 2-in-3 range, the OI range, the call and put walls, and max pain. Over time this builds your own measured hit rates.</p></div>`;
+  const score = it => { const s = settle[it.sym + '|' + it.e]; if (!(s > 0)) return null; const r = it.ref;
+    return { s, str: Math.abs(s - r.F) <= r.straddle, sig: r.sm ? Math.abs(s - r.F) <= r.sm : null, rng: r.sup != null && r.res != null ? s >= r.sup && s <= r.res : null, cw: s <= r.cw, pw: s >= r.pw, dMP: Math.abs(s - r.maxPain), dF: Math.abs(s - r.F) }; };
+  const chip = v => v == null ? '<span class="mut">–</span>' : v ? '<span class="hit">✓</span>' : '<span class="miss">✗</span>';
+  const bySym = {};
+  items.forEach(it => { const sc = score(it); if (sc){ (bySym[it.sym] = bySym[it.sym] || []).push(sc); } });
+  const rate = (a, f) => { const v = a.map(f).filter(x => x != null); return v.length ? `${v.filter(Boolean).length}/${v.length} (${nf(v.filter(Boolean).length / v.length * 100, 0)}%)` : '–'; };
+  const summary = Object.keys(bySym).length ? `<div class="tbl-wrap"><table><thead><tr><th class="l">Underlying</th><th>Expiries scored</th><th>Inside straddle range</th><th>Inside 2-in-3 range</th><th>Inside OI range</th><th>Call wall held</th><th>Put wall held</th><th>Avg distance: max pain</th><th>Avg distance: chain level</th></tr></thead><tbody>
+    ${Object.entries(bySym).map(([sym, a]) => { const mp = a.reduce((x, y) => x + y.dMP, 0) / a.length, fd = a.reduce((x, y) => x + y.dF, 0) / a.length;
+      return `<tr><td class="l"><b>${esc(sym)}</b></td><td>${a.length}</td><td>${rate(a, x => x.str)}</td><td>${rate(a, x => x.sig)}</td><td>${rate(a, x => x.rng)}</td><td>${rate(a, x => x.cw)}</td><td>${rate(a, x => x.pw)}</td><td class="${mp < fd ? 'pos' : ''}">${nf(mp)} pts</td><td class="${fd < mp ? 'pos' : ''}">${nf(fd)} pts</td></tr>`; }).join('')}
+    </tbody></table></div><p class="note" style="margin:8px 0 0">Green distance = which was closer to the settlement on average: max pain, or the level the chain itself priced. A model that works should be inside the 2-in-3 range about 68% of the time over many expiries; a handful of expiries is too few to judge.</p>`
+    : '<p class="note">Enter a settlement price below to start scoring.</p>';
+  const rowsH = items.map(it => { const r = it.ref, sc = score(it), k = it.sym + '|' + it.e;
+    return `<tr><td class="l"><b>${esc(it.sym)}</b></td><td class="l">${esc(dateTxt(it.e))}</td><td class="l mut">${tmTxt(r.asof)}<div style="font-size:11px">${it.n} snapshot${it.n > 1 ? 's' : ''}</div></td><td>${nf(r.F)}</td>
+      <td><input type="number" class="mprice" data-settle="${esc(k)}" id="st_${esc(k).replace(/[^A-Za-z0-9]/g, '_')}" step="0.05" min="0" value="${settle[k] || ''}" placeholder="settled at" aria-label="Settlement for ${esc(it.sym)} ${esc(it.e)}"></td>
+      <td>${nf(r.F - r.straddle)}–${nf(r.F + r.straddle)} ${sc ? chip(sc.str) : ''}</td><td>${r.sm ? `${nf(r.F - r.sm)}–${nf(r.F + r.sm)} ${sc ? chip(sc.sig) : ''}` : '–'}</td><td>${r.sup != null ? `${nf(r.sup)}–${nf(r.res)} ${sc ? chip(sc.rng) : ''}` : '–'}</td>
+      <td>${nf(r.cw)} ${sc ? chip(sc.cw) : ''}</td><td>${nf(r.pw)} ${sc ? chip(sc.pw) : ''}</td><td>${nf(r.maxPain)}${sc ? `<div class="mut" style="font-size:11px">${nf(sc.dMP)} pts away</div>` : ''}</td></tr>`; }).join('');
+  return `<div style="display:flex;flex-direction:column;gap:14px">
+    <div class="panel"><div class="panel-head"><div><h2>Expiry scorecard</h2><p class="note" style="margin:4px 0 0">How finished expiries settled against what the chain showed in your last upload before expiry.</p></div></div>${summary}</div>
+    <div class="tbl-wrap"><table><thead><tr><th class="l">Underlying</th><th class="l">Expiry</th><th class="l">Reference upload</th><th>Level then</th><th>Settlement</th><th>Straddle range</th><th>2-in-3 range</th><th>OI range</th><th>Call wall held</th><th>Put wall held</th><th>Max pain</th></tr></thead><tbody>${rowsH}</tbody></table></div>
+    <p class="note">Enter the official settlement or closing price from the exchange. "Held" means the settlement stayed at or below the call wall, or at or above the put wall.</p></div>`;
+}
+
+/* ---------- Backup & restore ---------- */
+function backupPanel(){
+  let n = 0, bytes = 0; try { for (let i = 0; i < localStorage.length; i++){ const k = localStorage.key(i); if (k && k.startsWith(SP)){ n++; bytes += (localStorage.getItem(k) || '').length; } } } catch(e){}
+  return `<div class="panel"><div class="panel-head"><div><h2>Backup and restore</h2><p class="note" style="margin:4px 0 0">Everything Chain Lab Pro saves (positions, journal, snapshots, IV history, scorecard, settings) lives in this browser only: ${n} items, about ${nf(bytes / 1024, 0)} KB. Download a backup regularly, and restore it to move to another browser or computer.</p></div>
+    <div class="actions"><button class="btn primary" type="button" data-act="backup">Download backup</button><label class="btn" for="restoreIn">Restore from backup</label><input type="file" id="restoreIn" accept=".json,application/json" hidden></div></div></div>`;
+}
+function doBackup(){
+  const data = {}; try { for (let i = 0; i < localStorage.length; i++){ const k = localStorage.key(i); if (k && k.startsWith(SP)) data[k.slice(SP.length)] = localStorage.getItem(k); } } catch(e){ toast('This browser blocked reading saved data.'); return; }
+  const now = localDT(new Date());
+  store.set('lastBackup', now);
+  saveFile(`STWP_ChainLabPro_backup_${now.replace(/[-:T]/g, '').slice(0, 12)}.json`, JSON.stringify({ app: 'STWP Chain Lab Pro', version: 1, created: now, data }, null, 1));
+}
+async function readRestore(file){
+  try { const j = JSON.parse(await file.text()); if (j.app !== 'STWP Chain Lab Pro' || !j.data) throw 0;
+    const pos = (() => { try { return JSON.parse(j.data.positions || '[]'); } catch(e){ return []; } })();
+    S.restore = { j, summary: `${pos.filter(p => p.status === 'open').length} open positions, ${pos.filter(p => p.status === 'closed').length} closed trades, ${Object.keys(j.data).filter(k => k.startsWith('snaps.')).length} snapshot sets` };
+    render(); window.scrollTo({top: 0, behavior: 'smooth'});
+  } catch(e){ toast('That file is not a Chain Lab Pro backup.'); }
+}
+function applyRestore(){
+  const j = S.restore && S.restore.j; if (!j) return;
+  try { const kill = []; for (let i = 0; i < localStorage.length; i++){ const k = localStorage.key(i); if (k && k.startsWith(SP)) kill.push(k); } kill.forEach(k => localStorage.removeItem(k));
+    Object.entries(j.data).forEach(([k, v]) => localStorage.setItem(SP + k, v)); } catch(e){ toast('This browser blocked writing saved data.'); return; }
+  toast('Backup restored. Reloading…'); setTimeout(() => location.reload(), 600);
 }
 
 /* ---------- share card ---------- */
@@ -1523,7 +1938,8 @@ function textReport(m, d){
   L.push(`• PCR (OI) ${nf(m.pcrOi,2)}: ${cr.posTag.toLowerCase()} (below 0.80 call-heavy, above 1.20 put-heavy)`);
   L.push(`• Call wall ${nf(m.callWall)} (${lakh(cw.ce.oi)} OI) · Put wall ${nf(m.putWall)} (${lakh(pw.pe.oi)} OI)`);
   L.push(`• Max pain ${nf(m.maxPain)}: the expiry level at which option buyers as a group collect the least`);
-  if (cr.flipK) L.push(`• Gamma flip near ${nf(cr.flipK)} (estimate): above it, hedging tends to damp moves; below it, moves can speed up`);
+  if (cr.gStrike != null) L.push(`• Gamma flip ${nf(cr.gStrike)}: per strike, gamma × OI changes sign here (put-heavy below, call-heavy above)`);
+  if (cr.flipK) L.push(`• Zero-gamma level near ${nf(cr.flipK)} (estimate): above it, hedging tends to damp moves; below it, moves can speed up`);
   L.push(`• New positions near ATM: calls ${cr.flowCE}; puts ${cr.flowPE}`);
   L.push('');
   L.push('*Pricing*');
@@ -1703,7 +2119,7 @@ async function saveFile(name, data){
     catch(e){ toast(e && e.code === 'declined' ? 'Download cancelled' : 'Download failed: ' + (e && e.message || 'unavailable here')); }
     return;
   }
-  const blob = data instanceof Blob ? data : new Blob([data], {type: /\.html$/.test(name) ? 'text/html' : 'text/csv'});
+  const blob = data instanceof Blob ? data : new Blob([data], {type: /\.html$/.test(name) ? 'text/html' : /\.json$/.test(name) ? 'application/json' : 'text/csv'});
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 4000);
 }
@@ -1738,9 +2154,10 @@ async function loadFiles(list){
     const text = await file.text(); const p = ENG.parseFile(text);
     if (p.error){ toast(`${file.name}: ${p.error}`); continue; }
     if (d.sample){ d.files = {}; d.sample = false; d.expiry = ''; d.asof = localDT(new Date()); d.legs = null; }
+    else if (Object.values(d.files).some(f => f.reopened)){ d.files = {}; d.asof = localDT(new Date()); d.legs = null; }
     d.files[p.fmt] = { name: file.name, ...p }; ok++;
   }
-  if (ok){ d.legs = null; recompute(); render(); toast(`Loaded ${ok} file${ok > 1 ? 's' : ''} for ${S.idx}${d.expiry ? '' : '. Set the expiry date next.'}`); }
+  if (ok){ d.legs = null; d.lastSnap = null; d.asof = localDT(new Date()); recompute(); render(); toast(`Loaded ${ok} file${ok > 1 ? 's' : ''} for ${S.idx}${d.expiry ? '' : '. Set the expiry date next.'}`); }
 }
 
 /* ---------- events ---------- */
@@ -1749,6 +2166,7 @@ document.addEventListener('click', e => {
   const act = t.dataset.act;
   if (act !== 'resetidx' && S.armReset){ S.armReset = false; if (!act) { /* fall through */ } }
   if (act !== 'clearhist' && S.armHist) S.armHist = false;
+  if (act !== 'deltrade' && S.armDel) S.armDel = null;
   if (act !== 'untrack' && S.untrackArm) S.untrackArm = false;
   const d = S.data[S.idx];
   if (t.dataset.idx){ S.idx = t.dataset.idx; recompute(); render(); return; }
@@ -1764,19 +2182,39 @@ document.addEventListener('click', e => {
   if (a === 'add'){ d.legs.push(...legsFrom([{side:'B', type:'CE', K:d.m.atm, lots:1}], d.m)); render(); }
   else if (a === 'reset'){ d.legs = []; render(); }
   else if (a === 'clear'){ d.files = {}; d.sample = false; d.expiry = ''; d.legs = null; d.m = null; render(); }
-  else if (a === 'track'){ if (trackFromBuilder(d)){ S.untrackArm = false; S.view = 'position'; store.set('view', S.view); render(); } }
-  else if (a === 'untrack'){ if (S.untrackArm){ store.set(posKey(S.idx), null); S.untrackArm = false; toast('Stopped tracking.'); } else { S.untrackArm = true; } render(); }
+  else if (a === 'track' || a === 'retrack'){ if (trackFromBuilder(d, a === 'retrack')){ S.untrackArm = false; S.view = 'position'; store.set('view', S.view); render(); } }
+  else if (a === 'untrack'){ if (S.untrackArm){ setPos(S.idx, null); S.untrackArm = false; toast('Position deleted without a journal entry.'); } else { S.untrackArm = true; } render(); }
   else if (a === 'pmode'){ const p = getPos(S.idx); if (p){ p.mode = t.dataset.val; if (p.mode === 'manual' && !p.manual){ p.manual = {}; } setPos(S.idx, p); render(); } }
   else if (a === 'logmanual'){ const p = getPos(S.idx), pl = manualPL(); if (p && pl != null){ const now = new Date(), at = localDT(now) + ':' + String(now.getSeconds()).padStart(2, '0'); const h = (p.hist || []).filter(x => !(x.manual && x.asof === at));
       h.push({ asof: at, F: p.manualSpot != null ? p.manualSpot : d.m.F, pl, manual: true }); h.sort((a, b) => a.asof < b.asof ? -1 : 1); p.hist = h.slice(-200); setPos(S.idx, p); toast(`Logged ${rupee(pl)} at ${dateTxt(at)}.`); render(); } }
   else if (a === 'resetmanual'){ const p = getPos(S.idx); if (p){ p.manual = {}; p.manualSpot = null; p.manualAt = null; setPos(S.idx, p); toast('Prices reset to the last file.'); render(); } }
   else if (a === 'clearhist'){ const p = getPos(S.idx); if (S.armHist && p){ p.hist = []; setPos(S.idx, p); S.armHist = false; toast('P&L history cleared.'); } else S.armHist = true; render(); }
-  else if (a === 'resetidx'){ if (S.armReset){ store.set(posKey(S.idx), null); WI.key = ''; S.armReset = false;
+  else if (a === 'resetidx'){ if (S.armReset){ POS.list = POS.list.filter(x => !(x.sym === S.idx && x.status === 'open')); savePos(); WI.key = ''; S.armReset = false;
       if (isStock(S.idx)){ const gone = S.idx; stocks.splice(stocks.indexOf(gone), 1); store.set('stocks', stocks); store.set(histKey(gone), null); delete S.data[gone]; S.idx = 'NIFTY'; recompute(); toast(`${gone} removed.`); }
       else { d.files = {}; d.sample = false; d.expiry = ''; d.asof = localDT(new Date()); d.legs = null; d.m = null; d.err = null; toast(`${S.idx} reset. Upload a chain to start again.`); } } else S.armReset = true; render(); }
   else if (a === 'addstock'){ S.adding = true; render(); setTimeout(() => { const x = document.getElementById('newSym'); if (x) x.focus(); }, 0); }
   else if (a === 'addcancel'){ S.adding = false; render(); }
   else if (a === 'wibase'){ WI.base = t.dataset.val; store.set('wibase', WI.base); WI.key = ''; render(); }
+  else if (a === 'possel'){ S.posSel[S.idx] = t.dataset.val; store.set('posSel', S.posSel); S.closing = false; WI.key = ''; render(); }
+  else if (a === 'closeform'){ S.closing = true; render(); window.scrollTo({top: 0, behavior: 'smooth'}); }
+  else if (a === 'closecancel'){ S.closing = false; render(); }
+  else if (a === 'closeconfirm'){ const p = getPos(S.idx), c = closeCalc(); if (!p || !c) return;
+    if (Object.values(c.ex).some(v => v == null)){ toast('Enter an exit price for every leg.'); return; }
+    const at = (document.getElementById('exAt') || {}).value || localDT(new Date());
+    Object.assign(p, { status:'closed', closedAt: at, exit: c.ex, realized: c.tot, note: ((document.getElementById('exNote') || {}).value || '').slice(0, 140), closeLevel: p.mode === 'manual' && p.manualSpot > 0 ? p.manualSpot : (d.m && p.expiry === d.expiry ? d.m.F : null) });
+    setPos(S.idx, p); S.closing = false; toast(`${p.name} closed: ${rupee(c.tot)} recorded in the Journal.`); render(); }
+  else if (a === 'reopen'){ const ls = latestSnap(S.idx, false); if (ls){ reopenSnap(S.idx, ls.e, ls.snap); recompute(); render(); toast(`Reopened ${S.idx} from ${tmTxt(ls.snap.asof)}.`); } }
+  else if (a === 'pfstep'){ const m = d.m; PF.spot = Math.round(PF.spot + (+t.dataset.val) * (m ? m.step : 50)); drawPayoff(); }
+  else if (a === 'pfday'){ PF.days = PF.days + (+t.dataset.val); drawPayoff(); }
+  else if (a === 'pfreset'){ const k = t.dataset.val; if (k === 'spot') PF.spot = Math.round(d.m.F); if (k === 'days') PF.days = 0; if (k === 'iv') PF.ivOff = 0; drawPayoff(); }
+  else if (a === 'pfbe'){ PF.be = t.dataset.val; drawPayoff(); }
+  else if (a === 'backup') doBackup();
+  else if (a === 'restoreok') applyRestore();
+  else if (a === 'restorecancel'){ S.restore = null; render(); }
+  else if (a === 'gojournal'){ S.view = 'journal'; store.set('view', S.view); render(); }
+  else if (a === 'journalcsv') journalCSV();
+  else if (a === 'gopos'){ const sym = t.dataset.sym; ensureData(sym); S.idx = sym; S.posSel[sym] = t.dataset.val; store.set('posSel', S.posSel); S.view = 'position'; recompute(); render(); }
+  else if (a === 'deltrade'){ const id = t.dataset.val; if (S.armDel === id){ POS.list = POS.list.filter(x => x.id !== id); savePos(); S.armDel = null; toast('Trade deleted from the journal.'); } else S.armDel = id; render(); }
   else if (a === 'wireset'){ WI.key = ''; render(); }
   else if (a === 'copytxt'){ const ta = document.getElementById('txtReport'); const code = textReport(d.m, d);
     const fallback = () => { if (ta){ ta.focus(); ta.select(); } toast('Copy blocked here. The text is selected: press Ctrl+C (or Cmd+C).'); };
@@ -1799,10 +2237,14 @@ document.addEventListener('submit', e => {
 });
 document.addEventListener('change', e => {
   const t = e.target, d = S.data[S.idx];
-  if (['wiSpot','wiDays','wiIv','wiSpotN','wiDaysN','wiIvN','riskAmt','manSpot'].includes(t.id) || t.dataset.mp) return;
+  if (['pfSpot','pfSpotN','pfDays','pfIv','pfIvN','wiSpot','wiDays','wiIv','wiSpotN','wiDaysN','wiIvN','riskAmt','manSpot','exAt','exNote'].includes(t.id) || t.dataset.mp || t.dataset.ex != null) return;
   if (t.id === 'posFile'){ loadPosFiles([...t.files]); t.value = ''; return; }
   if (t.id === 'posAsof') return;
+  if (t.id === 'restoreIn'){ if (t.files[0]) readRestore(t.files[0]); t.value = ''; return; }
+  if (t.id === 'shFrom' || t.id === 'shTo'){ S[t.id === 'shFrom' ? 'shFrom' : 'shTo'] = t.value; setTimeout(render, 0); return; }
+  if (t.dataset.settle){ const st = store.get('settle') || {}, v = parseFloat(t.value); if (v > 0) st[t.dataset.settle] = v; else delete st[t.dataset.settle]; store.set('settle', st); setTimeout(render, 0); return; }
   if (t.id === 'fileIn'){ loadFiles([...t.files]); t.value = ''; return; }
+  if ((t.id === 'asof' || t.id === 'expiry') && d.lastSnap){ const ls = d.lastSnap; store.set(snapKey(S.idx, ls.e), getSnaps(S.idx, ls.e).filter(x => x.asof !== ls.asof)); d.lastSnap = null; }
   if (t.id === 'asof' || t.id === 'expiry'){ d[t.id] = t.value; recompute(); render(); return; }
   if (t.id === 'lot'){ const v = Math.max(1, Math.round(+t.value || 1)); d.lot = v; savedLots[S.idx] = v; store.set('lots', savedLots); recompute(); render(); return; }
   if (t.id === 'width'){ S.width = +t.value; render(); return; }
@@ -1817,8 +2259,12 @@ document.addEventListener('change', e => {
 });
 document.addEventListener('input', e => {
   const t = e.target;
+  if (t.id === 'pfSpot' || t.id === 'pfSpotN'){ const v = +t.value; if (v > 0){ PF.spot = v; drawPayoff(); } return; }
+  if (t.id === 'pfDays'){ PF.days = +t.value; drawPayoff(); return; }
+  if (t.id === 'pfIv' || t.id === 'pfIvN'){ PF.ivOff = Math.max(-50, Math.min(50, +t.value || 0)); drawPayoff(); return; }
   if (t.id === 'wiSpot' || t.id === 'wiDays' || t.id === 'wiIv'){ updateWhatIf('slider'); return; }
   if (t.id === 'wiSpotN' || t.id === 'wiDaysN' || t.id === 'wiIvN'){ updateWhatIf('num'); return; }
+  if (t.dataset.ex != null){ closeCalc(); return; }
   if (t.dataset.mp){ const p = getPos(S.idx); if (!p) return; const v = parseFloat(t.value); p.manual = p.manual || {}; if (isFinite(v) && v >= 0) p.manual[t.dataset.mp] = v; else delete p.manual[t.dataset.mp]; p.manualAt = localDT(new Date()); setPos(S.idx, p); manualPL(); if (WI.base === 'manual') updateWhatIf('slider'); return; }
   if (t.id === 'manSpot'){ const p = getPos(S.idx); if (!p) return; const v = parseFloat(t.value); p.manualSpot = isFinite(v) && v > 0 ? v : null; setPos(S.idx, p); if (WI.base === 'manual') updateWhatIf('slider'); return; }
   if (t.id === 'riskAmt'){ SIZ.risk = Math.max(0, +t.value || 0); store.set('risk', SIZ.risk); const d = S.data[S.idx], m = d.m, p = getPos(S.idx); if (!m || !p) return;
@@ -1831,6 +2277,11 @@ document.addEventListener('input', e => {
 ['dragleave','drop'].forEach(ev => document.addEventListener(ev, e => { e.preventDefault(); if (ev === 'drop' || !e.relatedTarget) document.body.classList.remove('drop-on'); }));
 document.addEventListener('drop', e => { const f = [...(e.dataTransfer?.files || [])].filter(x => /\.csv$/i.test(x.name)); if (f.length) (S.view === 'position' && getPos(S.idx) ? loadPosFiles(f) : loadFiles(f)); });
 
+(() => { let any = false;
+  [...IDX, ...stocks].forEach(sym => { const ls = latestSnap(sym, true); if (ls){ reopenSnap(sym, ls.e, ls.snap); any = true; } });
+  const hasData = any || POS.list.length || Object.keys(store.get('snapIndex') || {}).length;
+  if (!hasData) loadSample();
+})();
 recompute(); render();
 })();
 </script>
