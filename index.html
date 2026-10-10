@@ -210,6 +210,24 @@ tr.atm0 td{background:var(--sunk);font-weight:600}
 .sizeout{font-size:14px}
 .upd{border-color:var(--green)}
 .closef{border:2px solid var(--orange)}
+.planstat{display:inline-block;font:600 12px/1.3 var(--f-ui);padding:4px 10px;border-radius:999px;background:var(--sunk);border:1px solid var(--line);white-space:nowrap}
+.planstat.ok{background:var(--green-soft);color:var(--green);border-color:transparent}
+.planstat.up{background:var(--green);color:#fff;border-color:transparent}
+.planstat.dn{background:var(--red);color:#fff;border-color:transparent}
+.planrow{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px 14px}
+.planrow input{width:100%}
+table.stress td,table.stress th{text-align:center}
+table.stress td.worst{outline:2px solid var(--red);outline-offset:-2px;font-weight:700}
+.calhead{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.cdh{font-size:11px;color:var(--muted);text-align:center;padding:2px 0}
+.cd{min-height:58px;border:1px solid var(--line-2);border-radius:6px;padding:4px 6px;display:flex;flex-direction:column;gap:1px;font-size:11.5px;min-width:0;overflow:hidden}
+.cd.empty{border:0}
+.cd .dn{color:var(--muted);font-size:11px}
+.cd b{font:600 12px var(--f-num);overflow:hidden;text-overflow:ellipsis}
+.cd.gain{background:var(--green-soft)} .cd.gain b{color:var(--green)}
+.cd.loss{background:var(--red-soft)} .cd.loss b{color:var(--red)}
+@media (max-width:600px){.cd{min-height:44px;padding:3px}.cd .mut{display:none}.cd b{font-size:10px}}
 .pfwrap{position:relative}
 .pfoi{font-size:12.5px;color:var(--muted);margin:6px 0 2px}
 .pftip{position:absolute;z-index:4;pointer-events:none;background:var(--surface);border:1px solid var(--line);box-shadow:0 6px 18px rgba(0,0,0,.14);border-radius:8px;padding:9px 12px;font-size:12.5px;min-width:200px}
@@ -1446,7 +1464,7 @@ function posMTM(p, m, lot){ return posLegs(p, m).reduce((a, l) => a + (l.now == 
 function logPosSnap(i, d, m){
   openFor(i).forEach(p => { if (p.expiry !== d.expiry) return;
     const h = (p.hist || []).filter(x => x.manual || x.asof !== d.asof);
-    h.push({ asof: d.asof, F: m.F, pl: posMTM(p, m, p.lot || d.lot) });
+    h.push({ asof: d.asof, F: m.F, pl: posMTM(p, m, p.lot || d.lot) }); if (p.plan) notePlanEvents(p, { pl: posMTM(p, m, p.lot || d.lot), F: m.F, at: d.asof });
     h.sort((a, b) => a.asof < b.asof ? -1 : 1); p.hist = h.slice(-200); setPos(i, p); });
 }
 function posUploader(p, d){
@@ -1521,7 +1539,8 @@ function closeForm(p, m, d){
     </tbody></table></div>
     <div class="updrow"><div class="field"><label for="exAt">Closed at</label><input type="datetime-local" id="exAt" value="${localDT(new Date())}"></div>
       <div class="field"><label for="exNote">Note (optional)</label><input type="text" id="exNote" maxlength="140" placeholder="e.g. exited at target"></div>
-      <div class="exsum">Realised P&amp;L <b id="exTot" class="rnum"></b></div>
+      <div class="field"><label for="exChg">Charges (₹)</label><input type="number" id="exChg" min="0" step="0.01" placeholder="from contract note"></div>
+      <div class="exsum">Gross <b id="exTot" class="rnum"></b><br>Net <b id="exNet" class="rnum"></b></div>
       <button class="btn primary" type="button" data-act="closeconfirm">Close and record</button><button class="btn" type="button" data-act="closecancel">Cancel</button></div></div>`;
 }
 function closeCalc(){
@@ -1530,6 +1549,8 @@ function closeCalc(){
     const r = ok ? Math.round(sgnL(l) * l.lots * lot * (v - l.entry) * 100) / 100 : 0; tot += r; ex[l.type + l.K] = ok ? v : null;
     const c = document.getElementById('exr' + i); if (c){ c.textContent = ok ? rupee(r) : '–'; c.className = cls(r); } });
   tot = Math.round(tot * 100) / 100;
+  const ce = document.getElementById('exChg'); if (ce && !ce.dataset.touched) ce.value = estCharges(p, ex) || '';
+  const chg = ce ? Math.max(0, +ce.value || 0) : 0, ne = document.getElementById('exNet'); if (ne){ ne.textContent = rupee(tot - chg); ne.className = 'rnum ' + cls(tot - chg); }
   const t = document.getElementById('exTot'); if (t){ t.textContent = rupee(tot); t.className = 'rnum ' + cls(tot); }
   return { tot, ex };
 }
@@ -1628,7 +1649,7 @@ function vPositionOne(m, d){
     <div class="tbl-wrap" style="margin-top:8px"><table><thead><tr><th class="l">Day</th><th class="l">Date</th><th>P&amp;L</th><th>Change that day</th></tr></thead><tbody>
     ${path.map(x => `<tr><td class="l">${x.i === 0 ? 'Now' : x.i < 0 ? 'Expiry 15:30' : '+' + x.i}</td><td class="l">${x.dt.toLocaleDateString('en-IN', {day:'2-digit', month:'short', weekday:'short'})}</td><td class="${cls(x.pl)}">${rupee(x.pl)}</td><td class="${cls(x.chg)}">${x.i !== 0 ? sgn(x.chg, v => (v < 0 ? '−₹' : '₹') + nf(Math.abs(v))) : '–'}</td></tr>`).join('')}
     </tbody></table></div><p class="note" style="margin:8px 0 0">Calendar days, including weekends and holidays, as option prices count them.</p></div>`;
-  return `<div style="display:flex;flex-direction:column;gap:14px">${posUploader(p, d)}${track}${whatif}${gap}<div class="grid2">${sizing}${ptab}</div>${decay}</div>`;
+  return `<div style="display:flex;flex-direction:column;gap:14px">${posUploader(p, d)}${track}${planPanel(p, m, d, L, st, lot)}${whatif}${stressPanel(p, m, d, L, lot)}${gap}<div class="grid2">${sizing}${ptab}</div>${decay}</div>`;
 }
 function sizeText(mult, ref, refTxt, lotsTxt){
   if (!(ref > 0)) return '<p style="margin:0">This build shows no loss at the reference point, so sizing by loss does not apply.</p>';
@@ -1691,6 +1712,146 @@ function trackFromBuilder(d, replace){
   WI.key = ''; if (d.m) logPosSnap(S.idx, d, d.m);
   toast(cur ? 'Position legs replaced from the builder.' : `${p.name} tracked. Upload newer data of this expiry to follow it.`);
   return true;
+}
+
+/* ---------- trade plan, charges, stress, touch ---------- */
+const NAME_VIEW = {'Long Call':'Bullish','Bull Call Spread':'Bullish','Bull Put Spread':'Bullish','Call Ratio Backspread':'Bullish','Bear Call Ladder':'Bullish',
+  'Long Put':'Bearish','Bear Put Spread':'Bearish','Bear Call Spread':'Bearish','Put Ratio Backspread':'Bearish','Bull Put Ladder':'Bearish',
+  'Iron Condor':'Neutral','Iron Butterfly':'Neutral','Short Strangle':'Neutral','Jade Lizard':'Neutral','Long Straddle':'Volatile','Long Strangle':'Volatile','Reverse Condor':'Volatile'};
+const SETUPS = ['OI wall bounce','OI wall break','Breakout','Breakdown','Range play','Expiry-day theta','IV crush','Event / results','Trend continuation','Reversal'];
+const viewOf = p => NAME_VIEW[p.name] || 'Custom';
+function touchProb(S, H, s, T){ if (!(s > 0) || !(T > 0) || !(H > 0)) return null; const v = s * Math.sqrt(T), b = Math.log(H / S);
+  return b > 0 ? ENG.ncdf((-b - s*s*T/2) / v) + (S / H) * ENG.ncdf((-b + s*s*T/2) / v) : ENG.ncdf((b + s*s*T/2) / v) + (S / H) * ENG.ncdf((b - s*s*T/2) / v); }
+function closeProb(S, H, s, T){ if (!(s > 0) || !(T > 0)) return null; const z = (Math.log(H / S) + s*s*T/2) / (s * Math.sqrt(T)); return H > S ? 1 - ENG.ncdf(z) : ENG.ncdf(z); }
+function curState(p){
+  const d = S.data[p.sym], m = d && !d.sample && d.m; if (!m || d.expiry !== p.expiry) return null;
+  const L = posLegs(p, m), mp = p.manual || {}, man = p.mode === 'manual', lot = p.lot || d.lot;
+  const pl = L.reduce((a, l) => { const v = man && mp[l.type + l.K] != null ? mp[l.type + l.K] : l.now; return a + (v == null ? 0 : sgnL(l) * l.lots * lot * (v - l.entry)); }, 0);
+  const F = man && p.manualSpot > 0 ? p.manualSpot : m.F;
+  return { pl, F, at: man && p.manualAt ? p.manualAt : d.asof };
+}
+function planStatus(p, cs){
+  const pl = p.plan || {}; if (!cs) return null;
+  const hits = [];
+  if (pl.stop > 0 && cs.pl <= -pl.stop) hits.push(['Stop hit', 'dn', `P&L ${rupee(cs.pl)} is past your stop of −₹${nf(pl.stop)}`]);
+  if (pl.target > 0 && cs.pl >= pl.target) hits.push(['Target hit', 'up', `P&L ${rupee(cs.pl)} has reached your target of ₹${nf(pl.target)}`]);
+  const lvl = (H, name, tone) => { if (!(H > 0) || !(pl.F0 > 0)) return; const below = H < pl.F0; if (below ? cs.F <= H : cs.F >= H) hits.push([`${name} level hit`, tone, `${S.idx === p.sym ? S.idx : p.sym} at ${nf(cs.F)} has ${below ? 'fallen to' : 'risen to'} your ${name.toLowerCase()} level ${nf(H)}`]); };
+  lvl(pl.stopLvl, 'Stop', 'dn'); lvl(pl.targetLvl, 'Target', 'up');
+  return hits;
+}
+function notePlanEvents(p, cs){
+  if (!cs || !p.plan) return; const h = planStatus(p, cs) || []; p.events = p.events || {};
+  if (h.some(x => x[0].startsWith('Stop')) && !p.events.stopAt) p.events.stopAt = cs.at;
+  if (h.some(x => x[0].startsWith('Target')) && !p.events.targetAt) p.events.targetAt = cs.at;
+}
+function adherence(p){
+  const pl = p.plan || {}, r = p.realized || 0;
+  if (!(pl.stop > 0) && !(pl.target > 0)) return 'No plan';
+  if (pl.target > 0 && r >= pl.target * 0.9) return 'Hit target';
+  if (pl.stop > 0 && r < -pl.stop * 1.1) return 'Held past stop';
+  if (pl.stop > 0 && r <= -pl.stop * 0.9) return 'Exited at stop';
+  return 'Exited between';
+}
+const CH = Object.assign({ mode:'none', flat:0, perOrder:0, stt:0, exch:0, sebi:0, stamp:0, gst:0 }, store.get('charges') || {});
+function estCharges(p, exitMap){
+  const lot = p.lot || 1; if (CH.mode === 'none') return 0; if (CH.mode === 'flat') return +CH.flat || 0;
+  let buy = 0, sell = 0, orders = 0;
+  p.legs.forEach(l => { const q = l.lots * lot, ex = exitMap && exitMap[l.type + l.K] != null ? exitMap[l.type + l.K] : 0; orders += 2;
+    if (l.side === 'B'){ buy += q * l.entry; sell += q * ex; } else { sell += q * l.entry; buy += q * ex; } });
+  const brk = (+CH.perOrder || 0) * orders, tot = buy + sell, exch = tot * (+CH.exch || 0) / 100, sebi = tot / 1e7 * (+CH.sebi || 0);
+  const stt = sell * (+CH.stt || 0) / 100, stamp = buy * (+CH.stamp || 0) / 100, gst = (brk + exch + sebi) * (+CH.gst || 0) / 100;
+  return Math.round((brk + exch + sebi + stt + stamp + gst) * 100) / 100;
+}
+const netOf = p => (p.realized || 0) - (p.charges || 0);
+
+function planPanel(p, m, d, L, st, lot){
+  const pl = p.plan || {}, cs = curState(p), hits = planStatus(p, cs) || [];
+  const s = m.atmIV, T = m.T, F = cs ? cs.F : m.F;
+  const used = [...new Set([...SETUPS, ...POS.list.map(x => x.plan && x.plan.setup).filter(Boolean)])];
+  const lv = [];
+  if (pl.stopLvl > 0) lv.push(['Stop level', pl.stopLvl]); if (pl.targetLvl > 0) lv.push(['Target level', pl.targetLvl]);
+  st.be.forEach((b, i) => lv.push([`Breakeven${st.be.length > 1 ? ' ' + (i + 1) : ''}`, b]));
+  const stat = !pl.stop && !pl.target && !pl.stopLvl && !pl.targetLvl ? ['No plan set', ''] : hits.length ? [hits.map(h => h[0]).join(' · '), hits.some(h => h[1] === 'dn') ? 'dn' : 'up'] : ['Within plan', 'ok'];
+  return `<div class="panel"><div class="panel-head"><div><h2>Trade plan</h2><p class="note" style="margin:4px 0 0">${pl.setAt ? `Set ${esc(dateTxt(pl.setAt))}${pl.F0 ? ` with ${p.sym} at ${nf(pl.F0)}` : ''}. ` : ''}Checked against every price update, from a file or typed in.</p></div><span class="planstat ${stat[1]}">${esc(stat[0])}</span></div>
+    ${hits.length ? `<ul class="qlist" style="margin:0 0 10px">${hits.map(h => `<li>${h[2]}.</li>`).join('')}</ul>` : ''}
+    <div class="planrow">
+      <div class="field"><label for="plStop">Stop-loss (₹ loss)</label><input type="number" id="plStop" min="0" step="100" value="${pl.stop || ''}" placeholder="e.g. 3000"></div>
+      <div class="field"><label for="plTarget">Target (₹ profit)</label><input type="number" id="plTarget" min="0" step="100" value="${pl.target || ''}" placeholder="e.g. 4500"></div>
+      <div class="field"><label for="plStopL">Stop level (${esc(p.sym)})</label><input type="number" id="plStopL" min="0" step="${m.step}" value="${pl.stopLvl || ''}" placeholder="optional"></div>
+      <div class="field"><label for="plTargetL">Target level (${esc(p.sym)})</label><input type="number" id="plTargetL" min="0" step="${m.step}" value="${pl.targetLvl || ''}" placeholder="optional"></div>
+      <div class="field"><label for="plSetup">Setup</label><input id="plSetup" list="setupList" maxlength="40" value="${esc(pl.setup || '')}" placeholder="pick or type"><datalist id="setupList">${used.map(x => `<option value="${esc(x)}">`).join('')}</datalist></div>
+      <div class="field" style="grid-column:span 2"><label for="plWhy">Reason for the trade</label><input id="plWhy" maxlength="160" value="${esc(pl.why || '')}" placeholder="e.g. put writers defending 22,700, IV normal"></div>
+    </div>
+    ${pl.stop > 0 && pl.target > 0 ? `<p class="note" style="margin:8px 0 0">Planned reward : risk ${nf(pl.target / pl.stop, 2)} : 1.${isFinite(st.maxLoss) && pl.stop > Math.abs(st.maxLoss) ? ` Your stop is larger than this position's max loss of ₹${nf(Math.abs(st.maxLoss))}, so it can never trigger.` : ''}</p>` : ''}
+    ${lv.length && s ? `<div class="tbl-wrap" style="margin-top:12px"><table><thead><tr><th class="l">Level</th><th>${esc(p.sym)}</th><th>Distance</th><th>Chance of touching before expiry</th><th>Chance of closing beyond at expiry</th></tr></thead><tbody>
+      ${lv.map(([n, H]) => `<tr><td class="l">${n}</td><td>${nf(H)}</td><td>${sgn(H - F, v => nf(v))} (${sgn((H - F) / F * 100, v => nf(v, 2))}%)</td><td><b>${pctv(touchProb(F, H, s, T))}</b></td><td>${pctv(closeProb(F, H, s, T))}</td></tr>`).join('')}
+      </tbody></table></div><p class="note" style="margin:6px 0 0">Lognormal model at ATM IV ${pctv(s, 2)} with ${nf(T * 365, 1)} days left. Touching is roughly twice as likely as closing beyond, which is why stops placed near the money get hit often.</p>` : ''}
+  </div>`;
+}
+function stressPanel(p, m, d, L, lot){
+  const days = Math.min(S.stDays || 0, Math.max(0, Math.floor(m.T * 365)));
+  const Tl = Math.max(m.T - days / 365, 0), mv = [-3, -2, -1, -0.5, 0, 0.5, 1, 2, 3], ivs = [5, 2.5, 0, -2.5, -5];
+  const grid = ivs.map(iv => mv.map(x => posPL(L, lot, m.F * (1 + x / 100), Tl, iv)));
+  const flat = grid.flat(), worst = Math.min(...flat), best = Math.max(...flat), amax = Math.max(Math.abs(worst), Math.abs(best), 1);
+  const cell = v => { const a = Math.min(1, Math.abs(v) / amax); return `background:color-mix(in srgb, ${v >= 0 ? 'var(--green)' : 'var(--red)'} ${Math.round(a * 30)}%, transparent)`; };
+  return `<div class="panel"><div class="panel-head"><div><h2>Stress grid</h2><p class="note" style="margin:4px 0 0">Position P&amp;L if ${esc(p.sym)} moves and IV shifts, every leg fully repriced. Worst cell outlined.</p></div>
+      <div class="filters"><span class="note">Days forward</span>${[0, 1, 2, 3].filter(x => x <= Math.floor(m.T * 365)).map(x => `<button type="button" class="pill" data-act="stdays" data-val="${x}" aria-pressed="${days === x}">${x === 0 ? 'Now' : '+' + x}</button>`).join('')}</div></div>
+    <div class="tbl-wrap"><table class="stress"><thead><tr><th class="l">IV change ↓ · ${esc(p.sym)} move →</th>${mv.map(x => `<th>${x > 0 ? '+' : ''}${x}%<div class="mut" style="font-weight:400">${nf(m.F * (1 + x / 100))}</div></th>`).join('')}</tr></thead><tbody>
+      ${ivs.map((iv, i) => `<tr><td class="l">${iv > 0 ? '+' : ''}${iv} pts</td>${grid[i].map((v, j) => `<td style="${cell(v)}" class="${v === worst ? 'worst' : ''} ${cls(v)}">${rupee(v)}</td>`).join('')}</tr>`).join('')}
+    </tbody></table></div><p class="note" style="margin:6px 0 0">Worst case in this grid: <b class="neg">${rupee(worst)}</b>. Best: <b class="pos">${rupee(best)}</b>. IV change is in volatility points on every leg.</p></div>`;
+}
+
+/* ---------- journal analytics ---------- */
+function jEquity(cl, useNet){
+  if (cl.length < 1) return '';
+  const pts = [...cl].sort((a, b) => a.closedAt < b.closedAt ? -1 : 1); let c = 0, peak = 0, mdd = 0, mddAt = null;
+  const e = pts.map(p => { c += useNet ? netOf(p) : (p.realized || 0); peak = Math.max(peak, c); const dd = c - peak; if (dd < mdd){ mdd = dd; mddAt = p.closedAt; } return { at: p.closedAt, c, dd }; });
+  const W = 820, H = 200, pl = 74, pr = 34, pt = 12, pb = 40, ddH = 40;
+  let mn = Math.min(0, ...e.map(x => x.c)), mx = Math.max(0, ...e.map(x => x.c)); const pd = (mx - mn) * 0.1 || 1; mn -= pd; mx += pd;
+  const X = i => pl + (e.length === 1 ? (W - pl - pr) / 2 : i / (e.length - 1) * (W - pl - pr)), Y = v => pt + (1 - (v - mn) / (mx - mn)) * (H - pt - pb - ddH);
+  const dmn = Math.min(-1, ...e.map(x => x.dd)), DY = v => H - pb - ddH + 6 + (v / dmn) * (ddH - 6);
+  const yk = niceTicks(mn, mx, 4);
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Equity curve and drawdown">
+    ${yk.map(v => `<line x1="${pl}" x2="${W-pr}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line-2)"/><text x="${pl-6}" y="${Y(v)+4}" text-anchor="end">${v < 0 ? '−' : ''}₹${nf(Math.abs(v))}</text>`).join('')}
+    <line x1="${pl}" x2="${W-pr}" y1="${Y(0)}" y2="${Y(0)}" stroke="var(--muted)"/>
+    <polyline fill="none" stroke="var(--ink)" stroke-width="2.2" points="${e.map((x, i) => X(i).toFixed(1) + ',' + Y(x.c).toFixed(1)).join(' ')}"/>
+    ${e.map((x, i) => `<circle cx="${X(i)}" cy="${Y(x.c)}" r="3" fill="${i && x.c < e[i-1].c ? 'var(--red)' : 'var(--green)'}"/>`).join('')}
+    <text x="${pl-6}" y="${H - pb - ddH + 14}" text-anchor="end">DD</text>
+    ${e.map((x, i) => `<rect x="${X(i) - 3}" y="${H - pb - ddH + 6}" width="6" height="${Math.max(0, DY(x.dd) - (H - pb - ddH + 6)).toFixed(1)}" fill="var(--red)" opacity=".5"/>`).join('')}
+    ${e.map((x, i) => i % Math.ceil(e.length / 8) === 0 || i === e.length - 1 ? `<text x="${X(i)}" y="${H - pb + 18}" text-anchor="middle">${new Date(x.at).toLocaleDateString('en-IN', {day:'2-digit', month:'short'})}</text>` : '').join('')}
+  </svg><p class="note" style="margin:4px 0 0">Max drawdown ${rupee(mdd)}${mddAt ? ` (reached ${esc(dateTxt(mddAt))})` : ''} · current drawdown ${rupee(e[e.length-1].dd)} · cumulative ${rupee(e[e.length-1].c)}.</p>`;
+}
+function jBreak(cl, useNet){
+  const by = S.jBy || 'Strategy', key = { Strategy: p => p.name || 'Custom', Setup: p => (p.plan && p.plan.setup) || 'No setup tag', Underlying: p => p.sym, View: viewOf, 'Plan adherence': adherence }[by];
+  const g = {}; cl.forEach(p => { const k = key(p); (g[k] = g[k] || []).push(p); });
+  const rows = Object.entries(g).map(([k, a]) => { const v = a.map(p => useNet ? netOf(p) : (p.realized || 0)), w = v.filter(x => x > 0).length, Rs = a.filter(p => p.entry && p.entry.maxLoss).map((p, i) => (useNet ? netOf(p) : p.realized) / Math.abs(p.entry.maxLoss));
+    return { k, n: a.length, w, tot: v.reduce((x, y) => x + y, 0), avg: v.reduce((x, y) => x + y, 0) / a.length, R: Rs.length ? Rs.reduce((x, y) => x + y, 0) / Rs.length : null }; }).sort((a, b) => b.tot - a.tot);
+  return `<div class="filters" style="margin:0 0 8px"><span class="note">Group by</span>${['Strategy','Setup','Underlying','View','Plan adherence'].map(x => `<button type="button" class="pill" data-act="jby" data-val="${x}" aria-pressed="${by === x}">${x}</button>`).join('')}</div>
+    <div class="tbl-wrap"><table><thead><tr><th class="l">${by}</th><th>Trades</th><th>Win rate</th><th>Total</th><th>Average</th><th>Average R</th></tr></thead><tbody>
+    ${rows.map(r => `<tr><td class="l"><b>${esc(r.k)}</b></td><td>${r.n}</td><td>${pctv(r.w / r.n, 0)}</td><td class="${cls(r.tot)}">${rupee(r.tot)}</td><td class="${cls(r.avg)}">${rupee(r.avg)}</td><td>${r.R == null ? '–' : sgn(r.R, v => nf(v, 2)) + 'R'}</td></tr>`).join('')}
+    </tbody></table></div>${by === 'Plan adherence' ? '<p class="note" style="margin:6px 0 0">Hit target: closed at 90% of target or better. Exited at stop: loss within 10% of the stop. Held past stop: loss more than 10% beyond the stop. Exited between: closed before either.</p>' : ''}`;
+}
+function jCal(cl, useNet){
+  const now = new Date(), ym = S.jMonth || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const [y, mo] = ym.split('-').map(Number), first = new Date(y, mo - 1, 1), days = new Date(y, mo, 0).getDate(), lead = (first.getDay() + 6) % 7;
+  const by = {}; cl.forEach(p => { const k = (p.closedAt || '').slice(0, 10); by[k] = (by[k] || 0) + (useNet ? netOf(p) : (p.realized || 0)); });
+  const cnt = {}; cl.forEach(p => { const k = (p.closedAt || '').slice(0, 10); cnt[k] = (cnt[k] || 0) + 1; });
+  const mtot = Object.entries(by).filter(([k]) => k.startsWith(ym)).reduce((a, [, v]) => a + v, 0);
+  const shift = n => { const dt = new Date(y, mo - 1 + n, 1); return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}`; };
+  const cells = []; for (let i = 0; i < lead; i++) cells.push('<div class="cd empty"></div>');
+  for (let dd = 1; dd <= days; dd++){ const k = `${ym}-${String(dd).padStart(2, '0')}`, v = by[k];
+    cells.push(`<div class="cd ${v == null ? '' : v >= 0 ? 'gain' : 'loss'}"><span class="dn">${dd}</span>${v == null ? '' : `<b>${rupee(v)}</b><span class="mut">${cnt[k]} trade${cnt[k] > 1 ? 's' : ''}</span>`}</div>`); }
+  return `<div class="calhead"><button class="btn small" type="button" data-act="jmon" data-val="${shift(-1)}" aria-label="Previous month">‹</button><b>${first.toLocaleDateString('en-IN', {month:'long', year:'numeric'})}</b><button class="btn small" type="button" data-act="jmon" data-val="${shift(1)}" aria-label="Next month">›</button><span class="${cls(mtot)}" style="margin-left:auto">Month: <b>${rupee(mtot)}</b></span></div>
+    <div class="cal">${['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(x => `<div class="cdh">${x}</div>`).join('')}${cells.join('')}</div>`;
+}
+function chargesPanel(){
+  const f = (id, lab, v, hint) => `<div class="field"><label for="${id}">${lab}</label><input type="number" id="${id}" data-ch="${id.slice(2)}" min="0" step="any" value="${v || ''}" placeholder="${hint}"></div>`;
+  return `<div class="panel"><div class="panel-head"><div><h2>Charges</h2><p class="note" style="margin:4px 0 0">Used to estimate charges when you close a trade; you can overwrite the figure with the exact amount from your contract note. Take the rates from your broker's rate card or contract note: they change, so none are preloaded.</p></div></div>
+    <div class="filters" style="margin-bottom:10px"><span class="note">Method</span>${[['none','No charges'],['flat','Fixed ₹ per trade'],['rates','Rate card']].map(([k, t]) => `<button type="button" class="pill" data-act="chmode" data-val="${k}" aria-pressed="${CH.mode === k}">${t}</button>`).join('')}</div>
+    ${CH.mode === 'flat' ? `<div class="planrow">${f('chflat', 'Charges per round trip (₹)', CH.flat, 'e.g. 120')}</div>` : ''}
+    ${CH.mode === 'rates' ? `<div class="planrow">${f('chperOrder', 'Brokerage per order (₹)', CH.perOrder, 'e.g. 20')}${f('chstt', 'STT on sell premium (%)', CH.stt, 'from contract note')}${f('chexch', 'Exchange charges on premium (%)', CH.exch, 'from contract note')}${f('chsebi', 'SEBI fee (₹ per crore)', CH.sebi, 'from contract note')}${f('chstamp', 'Stamp duty on buy premium (%)', CH.stamp, 'from contract note')}${f('chgst', 'GST on brokerage + fees (%)', CH.gst, 'e.g. 18')}</div>
+      <p class="note" style="margin:6px 0 0">Each leg counts as two orders (entry and exit). Legs left to expire are charged differently by the exchange, so overwrite those with the contract-note figure.</p>` : ''}
+  </div>`;
 }
 
 /* ===================== Pro: snapshots, OI shift, journal, scorecard, backup ===================== */
@@ -1812,52 +1973,60 @@ function posNow(p){
 }
 function vJournal(m, d){
   const open = POS.list.filter(p => p.status === 'open'), closed = POS.list.filter(p => p.status === 'closed').sort((a, b) => (b.closedAt || '') < (a.closedAt || '') ? -1 : 1);
-  const rows = open.map(p => ({ p, n: posNow(p) }));
+  const hasCh = closed.some(p => p.charges > 0), useNet = S.jNet != null ? S.jNet : hasCh;
+  const rows = open.map(p => ({ p, n: posNow(p), hit: planStatus(p, curState(p)) }));
   const tot = rows.reduce((a, r) => a + (r.n.pl || 0), 0), th = rows.reduce((a, r) => a + (r.n.g ? r.n.g.theta : 0), 0), vg = rows.reduce((a, r) => a + (r.n.g ? r.n.g.vega : 0), 0);
   const missG = rows.filter(r => !r.n.g).length;
-  const port = open.length ? `<div class="tbl-wrap"><table><thead><tr><th class="l">Underlying</th><th class="l">Position</th><th class="l">Expiry</th><th>P&amp;L now</th><th class="l">As of</th><th>Delta (₹/pt)</th><th>Theta (₹/day)</th><th>Vega (₹/IV pt)</th><th></th></tr></thead><tbody>
-      ${rows.map(({p, n}) => `<tr><td class="l"><b>${esc(p.sym)}</b></td><td class="l">${esc(p.name || 'Position')}<div class="mut" style="font-size:11.5px">${p.legs.map(l => `${l.side}${l.lots > 1 ? l.lots + '×' : ''} ${nf(l.K)} ${l.type}`).join(' · ')}</div></td><td class="l">${esc(dateTxt(p.expiry))}</td>
+  const port = open.length ? `<div class="tbl-wrap"><table><thead><tr><th class="l">Underlying</th><th class="l">Position</th><th class="l">Expiry</th><th class="l">Plan</th><th>P&amp;L now</th><th class="l">As of</th><th>Delta (₹/pt)</th><th>Theta (₹/day)</th><th>Vega (₹/IV pt)</th><th></th></tr></thead><tbody>
+      ${rows.map(({p, n, hit}) => `<tr><td class="l"><b>${esc(p.sym)}</b></td><td class="l">${esc(p.name || 'Position')}<div class="mut" style="font-size:11.5px">${p.legs.map(l => `${l.side}${l.lots > 1 ? l.lots + '×' : ''} ${nf(l.K)} ${l.type}`).join(' · ')}</div></td><td class="l">${esc(dateTxt(p.expiry))}</td>
+        <td class="l">${hit && hit.length ? hit.map(h => `<span class="planstat ${h[1]}" style="font-size:11px">${h[0]}</span>`).join(' ') : p.plan && (p.plan.stop || p.plan.target) ? '<span class="mut">within plan</span>' : '<span class="mut">no plan</span>'}</td>
         <td class="${cls(n.pl)}">${n.pl == null ? '–' : rupee(n.pl)}</td><td class="l mut">${n.at ? tmTxt(n.at) + ' · ' + n.src : '–'}</td><td>${n.g ? nf(n.g.delta,1) : '–'}</td><td class="${n.g ? cls(n.g.theta) : ''}">${n.g ? rupee(n.g.theta) : '–'}</td><td>${n.g ? rupee(n.g.vega) : '–'}</td>
         <td><button class="btn small" type="button" data-act="gopos" data-sym="${esc(p.sym)}" data-val="${p.id}">Open</button></td></tr>`).join('')}
-      <tr class="atm0"><td class="l" colspan="3">Total (${open.length} open)</td><td class="${cls(tot)}">${rupee(tot)}</td><td></td><td class="mut">not added</td><td class="${cls(th)}">${rupee(th)}</td><td>${rupee(vg)}</td><td></td></tr></tbody></table></div>
+      <tr class="atm0"><td class="l" colspan="4">Total (${open.length} open)</td><td class="${cls(tot)}">${rupee(tot)}</td><td></td><td class="mut">not added</td><td class="${cls(th)}">${rupee(th)}</td><td>${rupee(vg)}</td><td></td></tr></tbody></table></div>
       <p class="note" style="margin:8px 0 0">Delta is in ₹ per point of each position's own underlying, so it is not added across different underlyings. Theta and vega are in ₹ and do add up.${missG ? ` ${missG} position${missG > 1 ? 's have' : ' has'} no chain of its expiry loaded, so its Greeks are blank and its P&amp;L is the last saved value.` : ''}</p>`
     : '<p class="note">No open positions. Track one from the Strategy builder.</p>';
-  // stats
-  const R = closed.map(p => p.realized || 0), wins = R.filter(x => x > 0), losses = R.filter(x => x < 0);
-  const Rm = closed.filter(p => p.entry && p.entry.maxLoss).map(p => p.realized / Math.abs(p.entry.maxLoss));
+  const val = p => useNet ? netOf(p) : (p.realized || 0);
+  const R = closed.map(val), wins = R.filter(x => x > 0), losses = R.filter(x => x < 0);
+  const Rm = closed.filter(p => p.entry && p.entry.maxLoss).map(p => val(p) / Math.abs(p.entry.maxLoss));
   const days = closed.map(p => (new Date(p.closedAt) - new Date(p.openedAt)) / 864e5).filter(x => isFinite(x));
-  const avg = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : null;
+  const avg = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : null, sum = a => a.reduce((x, y) => x + y, 0);
+  const chT = sum(closed.map(p => p.charges || 0)), planned = closed.filter(p => adherence(p) !== 'No plan'), held = closed.filter(p => adherence(p) === 'Held past stop');
   const st = (k, v, s, c = '') => `<div class="metric"><span class="k">${k}</span><span class="v ${c}">${v}</span>${s ? `<span class="s">${s}</span>` : ''}</div>`;
   const stats = closed.length ? `<div class="metrics">
     ${st('Closed trades', closed.length, `${wins.length} won · ${losses.length} lost${closed.length - wins.length - losses.length ? ` · ${closed.length - wins.length - losses.length} flat` : ''}`)}
     ${st('Win rate', pctv(wins.length / closed.length, 0))}
-    ${st('Total realised', rupee(R.reduce((a, b) => a + b, 0)), '', cls(R.reduce((a, b) => a + b, 0)))}
+    ${st(useNet ? 'Total (net)' : 'Total (gross)', rupee(sum(R)), useNet ? `gross ${rupee(sum(closed.map(p => p.realized || 0)))} · charges ${rupee(-chT)}` : `charges recorded ${rupee(chT)}`, cls(sum(R)))}
     ${st('Average win', wins.length ? rupee(avg(wins)) : '–', '', 'pe')}
     ${st('Average loss', losses.length ? rupee(avg(losses)) : '–', '', 'ce')}
     ${st('Win/loss size', wins.length && losses.length ? nf(avg(wins) / Math.abs(avg(losses)), 2) + '×' : '–', 'average win ÷ average loss')}
-    ${st('Average R', Rm.length ? sgn(avg(Rm), v => nf(v, 2)) + 'R' : '–', 'realised ÷ max loss at entry')}
-    ${st('Best / worst', `${rupee(Math.max(...R))} / ${rupee(Math.min(...R))}`)}
+    ${st('Average R', Rm.length ? sgn(avg(Rm), v => nf(v, 2)) + 'R' : '–', 'per trade ÷ max loss at entry')}
+    ${st('Expectancy', rupee(avg(R)), 'average per trade')}
+    ${st('Trades with a plan', `${planned.length}/${closed.length}`, planned.length ? `${held.length} held past stop` : 'set a stop and target when tracking', held.length ? 'neg' : '')}
     ${st('Average holding', days.length ? nf(avg(days), 1) + ' days' : '–')}
-    ${st('Expectancy', rupee(avg(R)), 'average realised per trade')}
   </div>` : '';
-  const ctable = closed.length ? `<div class="tbl-wrap"><table><thead><tr><th class="l">Closed</th><th class="l">Underlying</th><th class="l">Position</th><th class="l">Expiry</th><th>Entry net</th><th>Max loss at entry</th><th>Realised</th><th>R</th><th class="l">Note</th><th></th></tr></thead><tbody>
-    ${closed.map(p => `<tr><td class="l">${tmTxt(p.closedAt)}</td><td class="l"><b>${esc(p.sym)}</b></td><td class="l">${esc(p.name || '')}<div class="mut" style="font-size:11.5px">${p.legs.map(l => `${l.side}${l.lots > 1 ? l.lots + '×' : ''} ${nf(l.K)} ${l.type} ${nf(l.entry,2)}→${p.exit && p.exit[l.type + l.K] != null ? nf(p.exit[l.type + l.K],2) : '–'}`).join(' · ')}</div></td><td class="l">${esc(dateTxt(p.expiry))}</td>
-      <td>${p.entry ? rupee(p.entry.net) : '–'}</td><td>${p.entry && p.entry.maxLoss != null ? rupee(p.entry.maxLoss) : 'Unlimited'}</td><td class="${cls(p.realized)}"><b>${rupee(p.realized)}</b></td><td>${p.entry && p.entry.maxLoss ? sgn(p.realized / Math.abs(p.entry.maxLoss), v => nf(v,2)) + 'R' : '–'}</td><td class="l" style="white-space:normal;max-width:220px">${esc(p.note || '')}</td>
+  const ctable = closed.length ? `<div class="tbl-wrap"><table><thead><tr><th class="l">Closed</th><th class="l">Underlying</th><th class="l">Position</th><th class="l">Setup</th><th>Gross</th><th>Charges</th><th>Net</th><th>R</th><th class="l">Plan</th><th class="l">Note</th><th></th></tr></thead><tbody>
+    ${closed.map(p => `<tr><td class="l">${tmTxt(p.closedAt)}</td><td class="l"><b>${esc(p.sym)}</b></td><td class="l">${esc(p.name || '')}<div class="mut" style="font-size:11.5px">${p.legs.map(l => `${l.side}${l.lots > 1 ? l.lots + '×' : ''} ${nf(l.K)} ${l.type} ${nf(l.entry,2)}→${p.exit && p.exit[l.type + l.K] != null ? nf(p.exit[l.type + l.K],2) : '–'}`).join(' · ')}</div></td>
+      <td class="l">${esc((p.plan && p.plan.setup) || '–')}</td><td class="${cls(p.realized)}">${rupee(p.realized)}</td><td>${p.charges ? rupee(-p.charges) : '–'}</td><td class="${cls(netOf(p))}"><b>${rupee(netOf(p))}</b></td><td>${p.entry && p.entry.maxLoss ? sgn(val(p) / Math.abs(p.entry.maxLoss), v => nf(v,2)) + 'R' : '–'}</td>
+      <td class="l">${(a => `<span class="planstat ${a === 'Held past stop' ? 'dn' : a === 'Hit target' ? 'up' : a === 'No plan' ? '' : 'ok'}" style="font-size:11px">${a}</span>`)(adherence(p))}</td><td class="l" style="white-space:normal;max-width:220px">${esc(p.note || '')}</td>
       <td><button class="btn small" type="button" data-act="deltrade" data-val="${p.id}">${S.armDel === p.id ? 'Click again' : 'Delete'}</button></td></tr>`).join('')}
     </tbody></table></div>` : '<p class="note">No closed trades yet. Use <b>Close position</b> in the Position tab to record one.</p>';
   return `<div style="display:flex;flex-direction:column;gap:14px">
-    <div class="panel"><div class="panel-head"><div><h2>Portfolio</h2><p class="note" style="margin:4px 0 0">All open positions across underlyings.</p></div></div>${port}</div>
-    <div class="panel"><div class="panel-head"><div><h2>Trade journal</h2><p class="note" style="margin:4px 0 0">Closed trades with realised P&amp;L. R = realised ÷ max loss at entry (defined-risk trades only).</p></div>
-      ${closed.length ? `<div class="actions"><button class="btn small" type="button" data-act="journalcsv">Download journal (CSV)</button></div>` : ''}</div>${stats}<div style="margin-top:12px">${ctable}</div></div>
+    <div class="panel"><div class="panel-head"><div><h2>Portfolio</h2><p class="note" style="margin:4px 0 0">All open positions across underlyings, with their trade-plan status.</p></div></div>${port}</div>
+    <div class="panel"><div class="panel-head"><div><h2>Trade journal</h2><p class="note" style="margin:4px 0 0">Closed trades. R = result ÷ max loss at entry (defined-risk trades only).</p></div>
+      <div class="actions"><span class="filters"><button type="button" class="pill" data-act="jnet" data-val="gross" aria-pressed="${!useNet}">Gross</button><button type="button" class="pill" data-act="jnet" data-val="net" aria-pressed="${useNet}">Net of charges</button></span>${closed.length ? `<button class="btn small" type="button" data-act="journalcsv">Download journal (CSV)</button>` : ''}</div></div>
+      ${stats}
+      ${closed.length ? `<h3 class="rsec">Equity curve and drawdown</h3>${jEquity(closed, useNet)}<h3 class="rsec">What works</h3><div style="margin-top:8px">${jBreak(closed, useNet)}</div><h3 class="rsec">Calendar</h3><div style="margin-top:8px">${jCal(closed, useNet)}</div><h3 class="rsec">All closed trades</h3>` : ''}
+      <div style="margin-top:8px">${ctable}</div></div>
+    ${chargesPanel()}
     ${backupPanel()}</div>`;
 }
 function journalCSV(){
   const q = v => { const s = v == null ? '' : String(v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
-  const out = [['Opened','Closed','Underlying','Position','Expiry','Legs (entry→exit)','Lot size','Entry net','Max loss at entry','Realised','R','Note'].join(',')];
-  POS.list.filter(p => p.status === 'closed').forEach(p => out.push([p.openedAt, p.closedAt, p.sym, p.name, p.expiry,
+  const out = [['Opened','Closed','Underlying','Position','View','Setup','Reason','Expiry','Legs (entry->exit)','Lot size','Entry net','Max loss at entry','Planned stop','Planned target','Gross P&L','Charges','Net P&L','R (net)','Plan adherence','Note'].join(',')];
+  POS.list.filter(p => p.status === 'closed').forEach(p => out.push([p.openedAt, p.closedAt, p.sym, p.name, viewOf(p), p.plan && p.plan.setup, p.plan && p.plan.why, p.expiry,
     p.legs.map(l => `${l.side === 'B' ? 'Buy' : 'Sell'} ${l.lots}x ${l.K} ${l.type} ${l.entry}->${p.exit ? p.exit[l.type + l.K] : ''}`).join(' | '), p.lot,
-    p.entry ? p.entry.net.toFixed(2) : '', p.entry && p.entry.maxLoss != null ? p.entry.maxLoss.toFixed(2) : 'Unlimited', (p.realized || 0).toFixed(2),
-    p.entry && p.entry.maxLoss ? (p.realized / Math.abs(p.entry.maxLoss)).toFixed(2) : '', p.note || ''].map(q).join(',')));
+    p.entry ? p.entry.net.toFixed(2) : '', p.entry && p.entry.maxLoss != null ? p.entry.maxLoss.toFixed(2) : 'Unlimited', p.plan && p.plan.stop, p.plan && p.plan.target,
+    (p.realized || 0).toFixed(2), (p.charges || 0).toFixed(2), netOf(p).toFixed(2), p.entry && p.entry.maxLoss ? (netOf(p) / Math.abs(p.entry.maxLoss)).toFixed(2) : '', adherence(p), p.note || ''].map(q).join(',')));
   saveFile(`STWP_trade_journal_${localDT(new Date()).slice(0, 10).replace(/-/g, '')}.csv`, '﻿' + out.join('\r\n'));
 }
 
@@ -2186,7 +2355,7 @@ document.addEventListener('click', e => {
   else if (a === 'untrack'){ if (S.untrackArm){ setPos(S.idx, null); S.untrackArm = false; toast('Position deleted without a journal entry.'); } else { S.untrackArm = true; } render(); }
   else if (a === 'pmode'){ const p = getPos(S.idx); if (p){ p.mode = t.dataset.val; if (p.mode === 'manual' && !p.manual){ p.manual = {}; } setPos(S.idx, p); render(); } }
   else if (a === 'logmanual'){ const p = getPos(S.idx), pl = manualPL(); if (p && pl != null){ const now = new Date(), at = localDT(now) + ':' + String(now.getSeconds()).padStart(2, '0'); const h = (p.hist || []).filter(x => !(x.manual && x.asof === at));
-      h.push({ asof: at, F: p.manualSpot != null ? p.manualSpot : d.m.F, pl, manual: true }); h.sort((a, b) => a.asof < b.asof ? -1 : 1); p.hist = h.slice(-200); setPos(S.idx, p); toast(`Logged ${rupee(pl)} at ${dateTxt(at)}.`); render(); } }
+      h.push({ asof: at, F: p.manualSpot != null ? p.manualSpot : d.m.F, pl, manual: true }); notePlanEvents(p, curState(p)); h.sort((a, b) => a.asof < b.asof ? -1 : 1); p.hist = h.slice(-200); setPos(S.idx, p); toast(`Logged ${rupee(pl)} at ${dateTxt(at)}.`); render(); } }
   else if (a === 'resetmanual'){ const p = getPos(S.idx); if (p){ p.manual = {}; p.manualSpot = null; p.manualAt = null; setPos(S.idx, p); toast('Prices reset to the last file.'); render(); } }
   else if (a === 'clearhist'){ const p = getPos(S.idx); if (S.armHist && p){ p.hist = []; setPos(S.idx, p); S.armHist = false; toast('P&L history cleared.'); } else S.armHist = true; render(); }
   else if (a === 'resetidx'){ if (S.armReset){ POS.list = POS.list.filter(x => !(x.sym === S.idx && x.status === 'open')); savePos(); WI.key = ''; S.armReset = false;
@@ -2201,13 +2370,19 @@ document.addEventListener('click', e => {
   else if (a === 'closeconfirm'){ const p = getPos(S.idx), c = closeCalc(); if (!p || !c) return;
     if (Object.values(c.ex).some(v => v == null)){ toast('Enter an exit price for every leg.'); return; }
     const at = (document.getElementById('exAt') || {}).value || localDT(new Date());
-    Object.assign(p, { status:'closed', closedAt: at, exit: c.ex, realized: c.tot, note: ((document.getElementById('exNote') || {}).value || '').slice(0, 140), closeLevel: p.mode === 'manual' && p.manualSpot > 0 ? p.manualSpot : (d.m && p.expiry === d.expiry ? d.m.F : null) });
-    setPos(S.idx, p); S.closing = false; toast(`${p.name} closed: ${rupee(c.tot)} recorded in the Journal.`); render(); }
+    const chgIn = document.getElementById('exChg'); notePlanEvents(p, curState(p));
+    Object.assign(p, { status:'closed', closedAt: at, exit: c.ex, realized: c.tot, charges: chgIn ? Math.max(0, +chgIn.value || 0) : 0, note: ((document.getElementById('exNote') || {}).value || '').slice(0, 140), closeLevel: p.mode === 'manual' && p.manualSpot > 0 ? p.manualSpot : (d.m && p.expiry === d.expiry ? d.m.F : null) });
+    setPos(S.idx, p); S.closing = false; toast(`${p.name} closed: ${rupee(c.tot - (p.charges || 0))} net recorded in the Journal.`); render(); }
   else if (a === 'reopen'){ const ls = latestSnap(S.idx, false); if (ls){ reopenSnap(S.idx, ls.e, ls.snap); recompute(); render(); toast(`Reopened ${S.idx} from ${tmTxt(ls.snap.asof)}.`); } }
   else if (a === 'pfstep'){ const m = d.m; PF.spot = Math.round(PF.spot + (+t.dataset.val) * (m ? m.step : 50)); drawPayoff(); }
   else if (a === 'pfday'){ PF.days = PF.days + (+t.dataset.val); drawPayoff(); }
   else if (a === 'pfreset'){ const k = t.dataset.val; if (k === 'spot') PF.spot = Math.round(d.m.F); if (k === 'days') PF.days = 0; if (k === 'iv') PF.ivOff = 0; drawPayoff(); }
   else if (a === 'pfbe'){ PF.be = t.dataset.val; drawPayoff(); }
+  else if (a === 'stdays'){ S.stDays = +t.dataset.val; render(); }
+  else if (a === 'jby'){ S.jBy = t.dataset.val; render(); }
+  else if (a === 'jmon'){ S.jMonth = t.dataset.val; render(); }
+  else if (a === 'jnet'){ S.jNet = t.dataset.val === 'net'; render(); }
+  else if (a === 'chmode'){ CH.mode = t.dataset.val; store.set('charges', CH); render(); }
   else if (a === 'backup') doBackup();
   else if (a === 'restoreok') applyRestore();
   else if (a === 'restorecancel'){ S.restore = null; render(); }
@@ -2237,7 +2412,12 @@ document.addEventListener('submit', e => {
 });
 document.addEventListener('change', e => {
   const t = e.target, d = S.data[S.idx];
-  if (['pfSpot','pfSpotN','pfDays','pfIv','pfIvN','wiSpot','wiDays','wiIv','wiSpotN','wiDaysN','wiIvN','riskAmt','manSpot','exAt','exNote'].includes(t.id) || t.dataset.mp || t.dataset.ex != null) return;
+  if (['plStop','plTarget','plStopL','plTargetL','plSetup','plWhy'].includes(t.id)){ const p = getPos(S.idx); if (!p) return; const pl = p.plan = p.plan || {};
+    const map = {plStop:'stop', plTarget:'target', plStopL:'stopLvl', plTargetL:'targetLvl', plSetup:'setup', plWhy:'why'}, k = map[t.id];
+    pl[k] = ['setup','why'].includes(k) ? t.value.trim().slice(0, k === 'why' ? 160 : 40) : (+t.value > 0 ? +t.value : null);
+    if (!pl.setAt){ pl.setAt = localDT(new Date()); } const cs = curState(p); if (cs && !pl.F0) pl.F0 = cs.F; notePlanEvents(p, cs); setPos(S.idx, p); setTimeout(render, 0); return; }
+  if (t.dataset.ch) return;
+  if (['exChg','pfSpot','pfSpotN','pfDays','pfIv','pfIvN','wiSpot','wiDays','wiIv','wiSpotN','wiDaysN','wiIvN','riskAmt','manSpot','exAt','exNote'].includes(t.id) || t.dataset.mp || t.dataset.ex != null) return;
   if (t.id === 'posFile'){ loadPosFiles([...t.files]); t.value = ''; return; }
   if (t.id === 'posAsof') return;
   if (t.id === 'restoreIn'){ if (t.files[0]) readRestore(t.files[0]); t.value = ''; return; }
@@ -2264,7 +2444,8 @@ document.addEventListener('input', e => {
   if (t.id === 'pfIv' || t.id === 'pfIvN'){ PF.ivOff = Math.max(-50, Math.min(50, +t.value || 0)); drawPayoff(); return; }
   if (t.id === 'wiSpot' || t.id === 'wiDays' || t.id === 'wiIv'){ updateWhatIf('slider'); return; }
   if (t.id === 'wiSpotN' || t.id === 'wiDaysN' || t.id === 'wiIvN'){ updateWhatIf('num'); return; }
-  if (t.dataset.ex != null){ closeCalc(); return; }
+  if (t.dataset.ex != null || t.id === 'exChg'){ if (t.id === 'exChg') t.dataset.touched = '1'; closeCalc(); return; }
+  if (t.dataset.ch){ CH[t.dataset.ch] = Math.max(0, +t.value || 0); store.set('charges', CH); return; }
   if (t.dataset.mp){ const p = getPos(S.idx); if (!p) return; const v = parseFloat(t.value); p.manual = p.manual || {}; if (isFinite(v) && v >= 0) p.manual[t.dataset.mp] = v; else delete p.manual[t.dataset.mp]; p.manualAt = localDT(new Date()); setPos(S.idx, p); manualPL(); if (WI.base === 'manual') updateWhatIf('slider'); return; }
   if (t.id === 'manSpot'){ const p = getPos(S.idx); if (!p) return; const v = parseFloat(t.value); p.manualSpot = isFinite(v) && v > 0 ? v : null; setPos(S.idx, p); if (WI.base === 'manual') updateWhatIf('slider'); return; }
   if (t.id === 'riskAmt'){ SIZ.risk = Math.max(0, +t.value || 0); store.set('risk', SIZ.risk); const d = S.data[S.idx], m = d.m, p = getPos(S.idx); if (!m || !p) return;
